@@ -1,0 +1,111 @@
+project:
+  name: Agent 2 Federated ECG Orchestrator
+  seed: 42
+  records_dir: datasets/records
+  output_dir: fl_ecg_orchestrator/outputs
+data:
+  input_length: 216
+  num_classes: 5
+  label_map:
+    N: 0
+    S: 1
+    V: 2
+    F: 3
+    Q: 4
+  global_test_records:
+  - '117'
+  - '201'
+  - '205'
+  - '209'
+  - '215'
+  - '217'
+  - '230'
+  - '233'
+clients:
+  client_1:
+  - '104'
+  - '105'
+  - '107'
+  - '124'
+  - '200'
+  - '203'
+  - '208'
+  - '214'
+  client_2:
+  - '101'
+  - '102'
+  - '108'
+  - '109'
+  - '210'
+  - '213'
+  - '228'
+  - '231'
+  client_3:
+  - '113'
+  - '114'
+  - '118'
+  - '220'
+  - '222'
+  - '223'
+  - '232'
+  - '234'
+  client_4:
+  - '106'
+  - '112'
+  - '116'
+  - '119'
+  - '207'
+  - '212'
+  - '219'
+  - '221'
+  client_5:
+  - '100'
+  - '103'
+  - '111'
+  - '115'
+  - '121'
+  - '122'
+  - '123'
+  - '202'
+training:
+  federated_rounds: 10
+  local_epochs: 2
+  batch_size: 128
+  learning_rate: 0.001
+  validation_ratio: 0.2
+strategy:
+  name: fedavg
+  proximal_mu: 0.0
+  smotetomek: false
+ablation:
+  seeds:
+  - 42
+  - 52
+  - 62
+  experiments:
+  - name: fedavg
+    strategy: fedavg
+    proximal_mu: 0.0
+    smotetomek: false
+  - name: fedavg_smotetomek
+    strategy: fedavg
+    proximal_mu: 0.0
+    smotetomek: true
+  - name: fedprox
+    strategy: fedprox
+    proximal_mu_values:
+    - 0.001
+    - 0.01
+    - 0.05
+    - 0.1
+    - 0.5
+    smotetomek: false
+  - name: fedprox_smotetomek
+    strategy: fedprox
+    proximal_mu_values:
+    - 0.001
+    - 0.01
+    - 0.05
+    - 0.1
+    - 0.5
+    smotetomek: true

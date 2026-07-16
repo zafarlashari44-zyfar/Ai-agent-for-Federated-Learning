@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fl-ecg-orchestrator"
+version = "0.1.0"
+description = "Patient-partitioned federated ECG classification orchestrator"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+
+dependencies = [
+    "flwr[simulation]>=1.32,<1.33",
+    "torch>=2.2",
+    "numpy>=2.0",
+    "scikit-learn>=1.5",
+    "imbalanced-learn>=0.14",
+    "pyyaml>=6.0",
+    "matplotlib>=3.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["fl_ecg_orchestrator"]
+
+[tool.hatch.build]
+include = [
+    "LICENSE",
+    "pyproject.toml",
+    "fl_ecg_orchestrator/**",
+]
+
+[tool.flwr.app]
+publisher = "zafar"
+fab-format-version = 1
+flwr-version-target = "1.32.0"
+
+[tool.flwr.app.components]
+serverapp = "fl_ecg_orchestrator.federated.server_app:app"
+clientapp = "fl_ecg_orchestrator.federated.client_app:app"
+
+[tool.flwr.app.config]
+num-server-rounds = 10
+local-epochs = 2
+learning-rate = 0.001
+strategy = "fedavg"
+proximal-mu = 0.0
+smotetomek = false
+seed = 42
+save-model = true
+fraction-evaluate = 1.0

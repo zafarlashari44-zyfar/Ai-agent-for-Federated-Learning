@@ -1,8 +1,41 @@
-.venv/
+﻿# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+.venv-*/
+
+# Environment variables
+.env
+.env.*
+
+# ECG datasets
+datasets/records/
 data/
+
+# Generated models and experiment outputs
+fl_ecg_orchestrator/outputs/
 models/
 reports/
 results/
-.env
+
+# Build files
+build/
+dist/
+*.egg-info/
+*.fab
+
+# Testing and notebooks
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Editors
+.vscode/
+.idea/
+
+# Operating system
+.DS_Store
+Thumbs.db
