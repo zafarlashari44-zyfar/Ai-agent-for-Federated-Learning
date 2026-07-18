@@ -1,0 +1,159 @@
+{
+  "project": "Agentic Federated ECG Analysis",
+  "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+  "agent_results": [
+    {
+      "name": "checkpoint_agent",
+      "status": "success",
+      "started_at": 1784396533.242762,
+      "finished_at": 1784396533.242762,
+      "output": {
+        "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+        "size_bytes": 188883
+      },
+      "error": null,
+      "duration_seconds": 0.0
+    },
+    {
+      "name": "shap_agent",
+      "status": "success",
+      "started_at": 1784396533.2437775,
+      "finished_at": 1784396580.6196759,
+      "output": {
+        "command": [
+          "C:\\Users\\z36-ali\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\scripts\\run_shap.py",
+          "--device",
+          "cpu",
+          "--checkpoint",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
+        ],
+        "return_code": 0,
+        "stdout": "Checkpoint: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth\nLoading model and global test data...\nComputing SHAP values with DeepExplainer on cpu...\n\nSHAP analysis complete.\nExplainer: DeepExplainer\nExplained samples: 250\nSubset accuracy: 0.5920\nResults: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\outputs\\explainability\\shap\n",
+        "stderr": ""
+      },
+      "error": null,
+      "duration_seconds": 47.375898361206055
+    },
+    {
+      "name": "advanced_evaluation_agent",
+      "status": "success",
+      "started_at": 1784396580.6196759,
+      "finished_at": 1784396587.2624128,
+      "output": {
+        "command": [
+          "C:\\Users\\z36-ali\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\scripts\\run_advanced_evaluation.py",
+          "--device",
+          "cpu",
+          "--checkpoint",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
+        ],
+        "return_code": 0,
+        "stdout": "Checkpoint: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth\nRunning advanced global evaluation...\n\nAdvanced evaluation complete.\nSamples: 18347\nAccuracy: 0.9282\nBalanced accuracy: 0.4851\nMacro F1: 0.4551\nWeighted F1: 0.9190\nMacro ROC AUC: 0.7880417611251065\nResults: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\outputs\\evaluation\n",
+        "stderr": ""
+      },
+      "error": null,
+      "duration_seconds": 6.642736911773682
+    },
+    {
+      "name": "calibration_agent",
+      "status": "success",
+      "started_at": 1784396587.2624128,
+      "finished_at": 1784396593.9208975,
+      "output": {
+        "command": [
+          "C:\\Users\\z36-ali\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\scripts\\run_calibration.py",
+          "--device",
+          "cpu",
+          "--checkpoint",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
+        ],
+        "return_code": 0,
+        "stdout": "Checkpoint: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth\nRunning calibration evaluation...\n\nCalibration evaluation complete.\nSamples: 18347\nAccuracy: 0.9282\nAverage confidence: 0.8847\nExpected Calibration Error: 0.0684\nMaximum Calibration Error: 0.1937\nMulticlass Brier score: 0.1296\nResults: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\outputs\\calibration\n",
+        "stderr": ""
+      },
+      "error": null,
+      "duration_seconds": 6.658484697341919
+    },
+    {
+      "name": "uncertainty_agent",
+      "status": "success",
+      "started_at": 1784396593.9208975,
+      "finished_at": 1784396618.1065147,
+      "output": {
+        "command": [
+          "C:\\Users\\z36-ali\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\scripts\\run_uncertainty.py",
+          "--device",
+          "cpu",
+          "--checkpoint",
+          "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+          "--mc-samples",
+          "30"
+        ],
+        "return_code": 0,
+        "stdout": "Checkpoint: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth\nRunning Monte Carlo Dropout uncertainty evaluation...\n\nUncertainty evaluation complete.\nSamples: 18347\nAccuracy: 0.9258\nMean normalized entropy: 0.2469\nMean mutual information: 0.034843\nHigh uncertainty samples: 2487\nResults: C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\outputs\\uncertainty\n",
+        "stderr": ""
+      },
+      "error": null,
+      "duration_seconds": 24.185617208480835
+    },
+    {
+      "name": "ReasoningAgent",
+      "status": "success",
+      "started_at": 1784396618.1065147,
+      "finished_at": 1784396618.1075096,
+      "output": {
+        "report_path": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\results\\clinical_reasoning.json",
+        "report": {
+          "summary": "No completed agent outputs.",
+          "confidence": "Unknown",
+          "explainability": "No explainability outputs found.",
+          "recommendation": "Insufficient information to generate a recommendation."
+        }
+      },
+      "error": null,
+      "duration_seconds": 0.0009949207305908203
+    }
+  ],
+  "research_results": {
+    "calibration": {
+      "samples": 18347,
+      "num_bins": 15,
+      "accuracy": 0.9282171472175288,
+      "average_confidence": 0.8847237132301322,
+      "confidence_gap": -0.04349343398739658,
+      "expected_calibration_error": 0.06842269182888375,
+      "maximum_calibration_error": 0.19367883192967028,
+      "multiclass_brier_score": 0.12963661369488982,
+      "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+      "round": 10
+    },
+    "uncertainty": {
+      "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+      "round": 10,
+      "samples": 18347,
+      "mc_samples": 30,
+      "dropout_layers": 2,
+      "accuracy": 0.9258189349757453,
+      "average_confidence": 0.8681526646785959,
+      "mean_predictive_entropy": 0.3973255919047086,
+      "mean_normalized_entropy": 0.24687227064497116,
+      "mean_mutual_information": 0.03484289280574985,
+      "mean_predictive_variance": 0.003089562952347728,
+      "confidence_uncertainty_correlation": -0.9710586748136283,
+      "uncertainty_counts": {
+        "Low": 11908,
+        "Medium": 3952,
+        "High": 2487
+      },
+      "accuracy_by_uncertainty_level": {
+        "Low": 0.967836748404434,
+        "Medium": 0.9638157894736842,
+        "High": 0.6642541214314435
+      }
+    }
+  }
+}

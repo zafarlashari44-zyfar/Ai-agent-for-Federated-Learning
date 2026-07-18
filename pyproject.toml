@@ -19,15 +19,17 @@ dependencies = [
     "matplotlib>=3.9",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["fl_ecg_orchestrator"]
-
 [tool.hatch.build]
+ignore-vcs = true
 include = [
     "LICENSE",
     "pyproject.toml",
-    "fl_ecg_orchestrator/**",
+    "fl_ecg_orchestrator/**/*.py",
+    "fl_ecg_orchestrator/config/config.yaml",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["fl_ecg_orchestrator"]
 
 [tool.flwr.app]
 publisher = "zafar"

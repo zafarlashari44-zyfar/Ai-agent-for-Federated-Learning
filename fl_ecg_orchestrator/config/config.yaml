@@ -23,50 +23,233 @@ data:
   - '233'
 clients:
   client_1:
-  - '104'
   - '105'
-  - '107'
-  - '124'
+  - '108'
+  - '112'
+  - '114'
+  - '202'
+  - '220'
+  - '221'
+  - '223'
+  client_2:
+  - '100'
+  - '116'
   - '200'
   - '203'
-  - '208'
-  - '214'
-  client_2:
-  - '101'
-  - '102'
-  - '108'
-  - '109'
   - '210'
-  - '213'
+  - '214'
   - '228'
   - '231'
   client_3:
-  - '113'
-  - '114'
-  - '118'
-  - '220'
-  - '222'
-  - '223'
-  - '232'
-  - '234'
-  client_4:
+  - '103'
   - '106'
-  - '112'
-  - '116'
-  - '119'
+  - '107'
+  - '122'
   - '207'
   - '212'
-  - '219'
-  - '221'
+  - '213'
+  - '232'
+  client_4:
+  - '101'
+  - '104'
+  - '113'
+  - '121'
+  - '123'
+  - '208'
+  - '222'
+  - '234'
   client_5:
-  - '100'
-  - '103'
+  - '102'
+  - '109'
   - '111'
   - '115'
-  - '121'
-  - '122'
-  - '123'
-  - '202'
+  - '118'
+  - '119'
+  - '124'
+  - '219'
+partition_audit:
+  clients:
+    client_1:
+      num_patients: 8
+      num_beats: 16117
+      class_counts:
+        N: 15310
+        S: 103
+        V: 686
+        F: 14
+        Q: 4
+      class_percentages:
+        N: 94.9929
+        S: 0.6391
+        V: 4.2564
+        F: 0.0869
+        Q: 0.0248
+      present_classes:
+      - N
+      - S
+      - V
+      - F
+      - Q
+    client_2:
+      num_patients: 8
+      num_beats: 16109
+      class_counts:
+        N: 15364
+        S: 49
+        V: 683
+        F: 10
+        Q: 3
+      class_percentages:
+        N: 95.3753
+        S: 0.3042
+        V: 4.2399
+        F: 0.0621
+        Q: 0.0186
+      present_classes:
+      - N
+      - S
+      - V
+      - F
+      - Q
+    client_3:
+      num_patients: 8
+      num_beats: 16109
+      class_counts:
+        N: 11656
+        S: 1379
+        V: 661
+        F: 355
+        Q: 2058
+      class_percentages:
+        N: 72.3571
+        S: 8.5604
+        V: 4.1033
+        F: 2.2037
+        Q: 12.7755
+      present_classes:
+      - N
+      - S
+      - V
+      - F
+      - Q
+    client_4:
+      num_patients: 8
+      num_beats: 16102
+      class_counts:
+        N: 12583
+        S: 228
+        V: 930
+        F: 365
+        Q: 1996
+      class_percentages:
+        N: 78.1456
+        S: 1.416
+        V: 5.7757
+        F: 2.2668
+        Q: 12.396
+      present_classes:
+      - N
+      - S
+      - V
+      - F
+      - Q
+    client_5:
+      num_patients: 8
+      num_beats: 16114
+      class_counts:
+        N: 13586
+        S: 35
+        V: 502
+        F: 6
+        Q: 1985
+      class_percentages:
+        N: 84.3118
+        S: 0.2172
+        V: 3.1153
+        F: 0.0372
+        Q: 12.3185
+      present_classes:
+      - N
+      - S
+      - V
+      - F
+      - Q
+  quality:
+    overall_score: 88.02
+    quality_grade: Good
+    patient_balance_score: 100.0
+    beat_balance_score: 99.97
+    class_coverage_score: 100.0
+    minority_balance_score: 60.1
+    minority_class_scores:
+      S: 43.13
+      V: 93.14
+      F: 44.0
+      Q: 60.12
+    record_integrity_score: 100.0
+    duplicate_patient_records: false
+    weights:
+      patient_balance: 0.15
+      beat_balance: 0.2
+      class_coverage: 0.25
+      minority_balance: 0.3
+      integrity: 0.1
+  optimization:
+    method: multi_start_simulated_annealing_cyclic_swaps_large_neighbourhood_search
+    seed: 2068
+    target_score: 95.0
+    restarts_configured: 12
+    restarts_completed: 12
+    iterations_per_restart: 60000
+    total_iterations: 720000
+    accepted_moves: 134564
+    improving_moves: 61901
+    rejected_coverage_moves: 154213
+    lns_attempts: 12000
+    lns_improvements: 0
+    restart_best_scores:
+    - 88.0
+    - 88.02
+    - 87.98
+    - 87.99
+    - 88.01
+    - 88.0
+    - 88.01
+    - 87.98
+    - 87.97
+    - 88.02
+    - 88.01
+    - 88.0
+    initial_score: 84.52
+    best_score: 88.02
+    score_improvement: 3.5
+    target_reached: false
+    best_quality:
+      overall_score: 88.02
+      quality_grade: Good
+      patient_balance_score: 100.0
+      beat_balance_score: 99.97
+      class_coverage_score: 100.0
+      minority_balance_score: 60.1
+      minority_class_scores:
+        S: 43.13
+        V: 93.14
+        F: 44.0
+        Q: 60.12
+      record_integrity_score: 100.0
+      duplicate_patient_records: false
+      weights:
+        patient_balance: 0.15
+        beat_balance: 0.2
+        class_coverage: 0.25
+        minority_balance: 0.3
+        integrity: 0.1
+    constraints_preserved:
+      whole_patient_assignment: true
+      equal_patient_count: true
+      no_duplicate_patients: true
+      no_patient_leakage: true
+      required_class_coverage: true
 training:
   federated_rounds: 10
   local_epochs: 2

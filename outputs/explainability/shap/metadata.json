@@ -1,0 +1,17 @@
+{
+  "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+  "config_path": "fl_ecg_orchestrator/config/config.yaml",
+  "device": "cpu",
+  "explainer": "DeepExplainer",
+  "input_length": 216,
+  "num_classes": 5,
+  "background_size": 100,
+  "explained_samples": 250,
+  "class_names": {
+    "0": "N",
+    "1": "S",
+    "2": "V",
+    "3": "F",
+    "4": "Q"
+  }
+}

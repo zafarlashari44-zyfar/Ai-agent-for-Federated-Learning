@@ -1,0 +1,16 @@
+ECG Model Calibration Evaluation
+================================
+
+Checkpoint: C:\Users\z36-ali\Desktop\Ai-agent-for-Federated-Learning\fl_ecg_orchestrator\outputs\checkpoints\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth
+Round: 10
+Samples: 18347
+Bins: 15
+
+Accuracy: 0.928217
+Average confidence: 0.884724
+Confidence gap: -0.043493
+Expected Calibration Error (ECE): 0.068423
+Maximum Calibration Error (MCE): 0.193679
+Multiclass Brier score: 0.129637
+
+Calibration tendency: underconfident

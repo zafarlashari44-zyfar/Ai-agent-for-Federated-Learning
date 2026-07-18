@@ -1,0 +1,16 @@
+Agentic Federated ECG Analysis
+===============================
+
+Checkpoint: C:\Users\z36-ali\Desktop\Ai-agent-for-Federated-Learning\fl_ecg_orchestrator\outputs\checkpoints\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth
+
+Agent execution:
+- checkpoint_agent: success (0.00s)
+- shap_agent: success (47.38s)
+- advanced_evaluation_agent: success (6.64s)
+- calibration_agent: success (6.66s)
+- uncertainty_agent: success (24.19s)
+- ReasoningAgent: success (0.00s)
+
+Research outputs found:
+- calibration
+- uncertainty

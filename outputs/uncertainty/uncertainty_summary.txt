@@ -1,0 +1,26 @@
+Monte Carlo Dropout Uncertainty Evaluation
+===========================================
+
+Checkpoint: C:\Users\z36-ali\Desktop\Ai-agent-for-Federated-Learning\fl_ecg_orchestrator\outputs\checkpoints\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth
+Round: 10
+Samples: 18347
+MC samples: 30
+Dropout layers: 2
+
+Accuracy: 0.925819
+Average confidence: 0.868153
+Mean predictive entropy: 0.397326
+Mean normalized entropy: 0.246872
+Mean mutual information: 0.034843
+Mean predictive variance: 0.003090
+Confidence-uncertainty correlation: -0.971059
+
+Uncertainty counts
+Low: 11908
+Medium: 3952
+High: 2487
+
+Accuracy by uncertainty level
+Low: 0.967836748404434
+Medium: 0.9638157894736842
+High: 0.6642541214314435

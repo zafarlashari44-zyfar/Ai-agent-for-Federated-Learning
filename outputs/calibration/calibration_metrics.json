@@ -1,0 +1,12 @@
+{
+  "samples": 18347,
+  "num_bins": 15,
+  "accuracy": 0.9282171472175288,
+  "average_confidence": 0.8847237132301322,
+  "confidence_gap": -0.04349343398739658,
+  "expected_calibration_error": 0.06842269182888375,
+  "maximum_calibration_error": 0.19367883192967028,
+  "multiclass_brier_score": 0.12963661369488982,
+  "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+  "round": 10
+}

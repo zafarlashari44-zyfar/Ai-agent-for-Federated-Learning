@@ -1,0 +1,24 @@
+{
+  "checkpoint": "C:\\Users\\z36-ali\\Desktop\\Ai-agent-for-Federated-Learning\\fl_ecg_orchestrator\\outputs\\checkpoints\\fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+  "round": 10,
+  "samples": 18347,
+  "mc_samples": 30,
+  "dropout_layers": 2,
+  "accuracy": 0.9258189349757453,
+  "average_confidence": 0.8681526646785959,
+  "mean_predictive_entropy": 0.3973255919047086,
+  "mean_normalized_entropy": 0.24687227064497116,
+  "mean_mutual_information": 0.03484289280574985,
+  "mean_predictive_variance": 0.003089562952347728,
+  "confidence_uncertainty_correlation": -0.9710586748136283,
+  "uncertainty_counts": {
+    "Low": 11908,
+    "Medium": 3952,
+    "High": 2487
+  },
+  "accuracy_by_uncertainty_level": {
+    "Low": 0.967836748404434,
+    "Medium": 0.9638157894736842,
+    "High": 0.6642541214314435
+  }
+}
