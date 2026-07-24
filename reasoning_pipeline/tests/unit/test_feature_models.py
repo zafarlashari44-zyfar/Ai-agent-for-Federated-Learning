@@ -5,8 +5,8 @@ import pytest
 from reasoning_pipeline.domain.enums.statuses import SignalQualityStatus
 from reasoning_pipeline.domain.models import (
     MorphologyFeatures,
-    RPeakSeries,
     RhythmFeatures,
+    RPeakSeries,
     SignalQuality,
 )
 
