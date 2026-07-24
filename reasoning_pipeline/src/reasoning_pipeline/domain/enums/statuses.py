@@ -1,21 +1,21 @@
-﻿from enum import Enum
+from enum import StrEnum
 
 
-class SignalQualityStatus(str, Enum):
+class SignalQualityStatus(StrEnum):
     GOOD = "good"
     ACCEPTABLE = "acceptable"
     POOR = "poor"
     UNUSABLE = "unusable"
 
 
-class EvidenceDirection(str, Enum):
+class EvidenceDirection(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"
     NEUTRAL = "neutral"
     UNAVAILABLE = "unavailable"
 
 
-class ConsistencyStatus(str, Enum):
+class ConsistencyStatus(StrEnum):
     STRONGLY_SUPPORTED = "strongly_supported"
     PARTIALLY_SUPPORTED = "partially_supported"
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
