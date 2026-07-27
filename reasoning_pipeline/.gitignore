@@ -1,0 +1,4 @@
+
+# Local test and R artefacts
+.coverage
+.Rhistory
