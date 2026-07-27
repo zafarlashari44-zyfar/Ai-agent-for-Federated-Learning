@@ -1,5 +1,4 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 from reasoning_pipeline.domain.models.morphology_features import (
     MorphologyFeatures,
@@ -16,7 +15,7 @@ class FeatureSet:
     rhythm: RhythmFeatures
     morphology: MorphologyFeatures
     extraction_version: str
-    warnings: Tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.extraction_version.strip():

@@ -1,11 +1,10 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass(frozen=True)
 class ECGSignal:
     record_id: str
-    samples: Tuple[float, ...]
+    samples: tuple[float, ...]
     sampling_rate_hz: float
     source: str
     lead_name: str | None = None

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
 
 from reasoning_pipeline.domain.enums.statuses import ConsistencyStatus
 
@@ -12,9 +11,9 @@ class ClinicalReport:
     consistency_status: ConsistencyStatus
     reasoning_confidence: float
     summary: str
-    supporting_findings: Tuple[str, ...]
-    conflicting_findings: Tuple[str, ...]
-    limitations: Tuple[str, ...]
+    supporting_findings: tuple[str, ...]
+    conflicting_findings: tuple[str, ...]
+    limitations: tuple[str, ...]
     recommended_action: str
     model_version: str
     preprocessing_version: str

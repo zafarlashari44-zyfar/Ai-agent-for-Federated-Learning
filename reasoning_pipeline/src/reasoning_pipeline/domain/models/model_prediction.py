@@ -1,12 +1,11 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass(frozen=True)
 class ModelPrediction:
     predicted_class: int
     predicted_label: str
-    probabilities: Tuple[float, ...]
+    probabilities: tuple[float, ...]
     confidence: float
     checkpoint_path: str
     checkpoint_hash: str

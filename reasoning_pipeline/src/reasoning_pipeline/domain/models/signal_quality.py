@@ -1,5 +1,4 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 from reasoning_pipeline.domain.enums.statuses import SignalQualityStatus
 
@@ -10,7 +9,7 @@ class SignalQuality:
     status: SignalQualityStatus
     noise_score: float | None = None
     valid_sample_ratio: float | None = None
-    warnings: Tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.score <= 1.0:

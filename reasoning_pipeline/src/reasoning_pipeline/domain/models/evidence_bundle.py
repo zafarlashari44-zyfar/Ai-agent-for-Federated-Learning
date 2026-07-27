@@ -1,5 +1,4 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 from reasoning_pipeline.domain.models.evidence_item import EvidenceItem
 from reasoning_pipeline.domain.models.feature_set import FeatureSet
@@ -13,10 +12,10 @@ class EvidenceBundle:
     record_id: str
     prediction: ModelPrediction
     features: FeatureSet
-    supporting_evidence: Tuple[EvidenceItem, ...]
-    conflicting_evidence: Tuple[EvidenceItem, ...]
-    neutral_evidence: Tuple[EvidenceItem, ...]
-    limitations: Tuple[str, ...]
+    supporting_evidence: tuple[EvidenceItem, ...]
+    conflicting_evidence: tuple[EvidenceItem, ...]
+    neutral_evidence: tuple[EvidenceItem, ...]
+    limitations: tuple[str, ...]
     evidence_version: str
 
     def __post_init__(self) -> None:

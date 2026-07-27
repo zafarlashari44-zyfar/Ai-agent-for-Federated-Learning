@@ -1,12 +1,11 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass(frozen=True)
 class RPeakSeries:
-    sample_indices: Tuple[int, ...]
-    timestamps_seconds: Tuple[float, ...]
-    rr_intervals_ms: Tuple[float, ...]
+    sample_indices: tuple[int, ...]
+    timestamps_seconds: tuple[float, ...]
+    rr_intervals_ms: tuple[float, ...]
     detector_name: str
     detector_version: str
     confidence: float

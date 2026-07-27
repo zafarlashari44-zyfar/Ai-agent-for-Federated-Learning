@@ -1,5 +1,4 @@
 ﻿from dataclasses import dataclass
-from typing import Tuple
 
 from reasoning_pipeline.domain.enums.statuses import ConsistencyStatus
 from reasoning_pipeline.domain.models.evidence_bundle import EvidenceBundle
@@ -11,8 +10,8 @@ class ReasoningResult:
     consistency_status: ConsistencyStatus
     reasoning_confidence: float
     conclusion: str
-    limitations: Tuple[str, ...]
-    rule_trace: Tuple[str, ...]
+    limitations: tuple[str, ...]
+    rule_trace: tuple[str, ...]
     reasoning_version: str
 
     def __post_init__(self) -> None:
