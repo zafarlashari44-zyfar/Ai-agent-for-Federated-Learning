@@ -8,9 +8,10 @@ version = "0.1.0"
 description = "Evidence based reasoning pipeline for federated ECG classification"
 requires-python = ">=3.12"
 dependencies = [
-    "numpy>=1.26",
+    "numpy>=1.26,<2.0",
     "ollama>=0.6.2,<0.7",
     "scipy>=1.13",
+    "torch>=2.2.2,<2.3",
 ]
 
 [project.optional-dependencies]
@@ -55,3 +56,4 @@ python_version = "3.12"
 strict = true
 packages = ["reasoning_pipeline"]
 mypy_path = "src"
+
