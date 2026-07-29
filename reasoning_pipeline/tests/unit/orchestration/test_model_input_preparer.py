@@ -17,7 +17,6 @@ from reasoning_pipeline.orchestration.model_input_preparer import (
 )
 
 
-
 class IdentityCleaner:
     def clean(self, signal: ECGSignal) -> np.ndarray:
         return np.asarray(

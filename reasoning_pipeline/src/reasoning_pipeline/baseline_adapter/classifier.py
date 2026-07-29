@@ -4,8 +4,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
-from numpy.typing import NDArray
 import torch
+from numpy.typing import NDArray
 
 from reasoning_pipeline.baseline_adapter.checkpoint import (
     calculate_sha256,
