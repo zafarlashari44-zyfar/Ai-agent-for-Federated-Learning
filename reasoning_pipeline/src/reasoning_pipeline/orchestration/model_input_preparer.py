@@ -22,7 +22,60 @@ class PreparedBeat:
 
     beat_index: int
     r_peak_sample_index: int
+    source_start_sample_index: int
+    source_stop_sample_index_exclusive: int
+    r_peak_timestamp_seconds: float
+    source_start_timestamp_seconds: float
+    source_stop_timestamp_seconds_exclusive: float
+    sampling_rate_hz: float
     samples: tuple[float, ...]
+
+    def __post_init__(self) -> None:
+        if self.sampling_rate_hz <= 0:
+            raise ValueError("sampling_rate_hz must be greater than zero")
+
+        if (
+            self.source_stop_sample_index_exclusive
+            - self.source_start_sample_index
+            != 216
+        ):
+            raise ValueError("Prepared beat source window must contain 216 samples")
+
+        if (
+            self.r_peak_sample_index - self.source_start_sample_index
+            != 72
+        ):
+            raise ValueError(
+                "Prepared beat R-peak must be 72 samples after window start"
+            )
+
+        expected_timestamps = (
+            (
+                self.r_peak_timestamp_seconds,
+                self.r_peak_sample_index,
+            ),
+            (
+                self.source_start_timestamp_seconds,
+                self.source_start_sample_index,
+            ),
+            (
+                self.source_stop_timestamp_seconds_exclusive,
+                self.source_stop_sample_index_exclusive,
+            ),
+        )
+
+        for timestamp, sample_index in expected_timestamps:
+            if not np.isclose(
+                timestamp,
+                sample_index / self.sampling_rate_hz,
+            ):
+                raise ValueError(
+                    "Prepared beat timestamps must equal sample index divided "
+                    "by sampling_rate_hz"
+                )
+
+        if len(self.samples) != 216:
+            raise ValueError("Prepared beat must contain exactly 216 samples")
 
 
 class ModelInputPreparer:
@@ -98,6 +151,8 @@ class ModelInputPreparer:
         prepared_beats: list[PreparedBeat] = []
 
         for beat_index, peak_index in enumerate(peak_indices):
+            start = peak_index - self.PRE_R_SAMPLES
+            stop = peak_index + self.POST_R_SAMPLES
             beat = self._extract_beat(
                 samples=cleaned_samples,
                 peak_index=peak_index,
@@ -112,6 +167,18 @@ class ModelInputPreparer:
                 PreparedBeat(
                     beat_index=beat_index,
                     r_peak_sample_index=peak_index,
+                    source_start_sample_index=start,
+                    source_stop_sample_index_exclusive=stop,
+                    r_peak_timestamp_seconds=(
+                        peak_index / signal.sampling_rate_hz
+                    ),
+                    source_start_timestamp_seconds=(
+                        start / signal.sampling_rate_hz
+                    ),
+                    source_stop_timestamp_seconds_exclusive=(
+                        stop / signal.sampling_rate_hz
+                    ),
+                    sampling_rate_hz=signal.sampling_rate_hz,
                     samples=tuple(
                         float(value)
                         for value in normalised_beat

@@ -127,6 +127,31 @@ def test_prepare_all_creates_216_sample_beats() -> None:
     )
 
 
+def test_prepare_all_preserves_source_coordinates_and_timestamps() -> None:
+    preparer = ModelInputPreparer(
+        cleaner=IdentityCleaner(),
+    )
+    signal = _build_signal()
+    features = _build_features((20, 400, 800))
+
+    beats = preparer.prepare_all(
+        signal=signal,
+        features=features,
+    )
+
+    first = beats[0]
+    assert first.beat_index == 1
+    assert first.r_peak_sample_index == 400
+    assert first.source_start_sample_index == 328
+    assert first.source_stop_sample_index_exclusive == 544
+    assert first.sampling_rate_hz == 360.0
+    assert first.r_peak_timestamp_seconds == pytest.approx(400 / 360)
+    assert first.source_start_timestamp_seconds == pytest.approx(328 / 360)
+    assert first.source_stop_timestamp_seconds_exclusive == pytest.approx(
+        544 / 360
+    )
+
+
 def test_each_beat_is_z_normalised() -> None:
     preparer = ModelInputPreparer(
         cleaner=IdentityCleaner(),

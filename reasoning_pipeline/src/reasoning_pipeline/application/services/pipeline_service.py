@@ -68,7 +68,7 @@ class PipelineService:
         Load and analyse one complete ECG recording.
 
         The uploaded signal does not need to be segmented. R peak detection,
-        beat extraction, representative beat selection, and fixed length
+        beat extraction, full-record beat classification, and fixed-length
         preparation remain inside the existing analysis pipeline.
         """
         adapter = self._resolve_adapter(file_path)

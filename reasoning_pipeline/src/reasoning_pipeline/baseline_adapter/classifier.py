@@ -21,6 +21,7 @@ from reasoning_pipeline.baseline_adapter.labels import (
 from reasoning_pipeline.domain.models.model_prediction import (
     ModelPrediction,
 )
+from reasoning_pipeline.infrastructure.model_lock import shared_model_lock
 
 
 class BaselineClassifier:
@@ -53,6 +54,7 @@ class BaselineClassifier:
         self.checkpoint_hash = calculate_sha256(
             self.checkpoint_path
         )
+        self._model_lock = shared_model_lock(self.model)
 
     def _prepare_beat(
         self,
@@ -95,8 +97,9 @@ class BaselineClassifier:
     ) -> ModelPrediction:
         features = self._prepare_beat(beat)
 
-        self.model.eval()
-        logits = self.model(features)
+        with self._model_lock:
+            self.model.eval()
+            logits = self.model(features)
 
         probabilities_tensor = torch.softmax(
             logits,
@@ -130,4 +133,57 @@ class BaselineClassifier:
             preprocessing_version=(
                 self.PREPROCESSING_VERSION
             ),
+        )
+
+    @torch.no_grad()
+    def predict_many(
+        self,
+        beats: Sequence[Sequence[float] | NDArray[np.float32]],
+    ) -> tuple[ModelPrediction, ...]:
+        """Predict every supplied beat in one model forward pass."""
+        if not beats:
+            return ()
+
+        tensors = [
+            self._prepare_beat(beat).squeeze(0)
+            for beat in beats
+        ]
+        features = torch.stack(tensors, dim=0)
+
+        with self._model_lock:
+            self.model.eval()
+            logits = self.model(features)
+        probabilities_tensor = torch.softmax(logits, dim=1)
+        predicted_classes = torch.argmax(probabilities_tensor, dim=1)
+
+        probability_rows = probabilities_tensor.detach().cpu().tolist()
+        class_indices = predicted_classes.detach().cpu().tolist()
+
+        return tuple(
+            self._create_prediction(
+                predicted_class=int(class_index),
+                probabilities=tuple(float(value) for value in probability_row),
+            )
+            for class_index, probability_row in zip(
+                class_indices,
+                probability_rows,
+                strict=True,
+            )
+        )
+
+    def _create_prediction(
+        self,
+        *,
+        predicted_class: int,
+        probabilities: tuple[float, ...],
+    ) -> ModelPrediction:
+        return ModelPrediction(
+            predicted_class=predicted_class,
+            predicted_label=get_class_label(predicted_class),
+            probabilities=probabilities,
+            confidence=probabilities[predicted_class],
+            checkpoint_path=str(self.checkpoint_path),
+            checkpoint_hash=self.checkpoint_hash,
+            model_version=self.MODEL_VERSION,
+            preprocessing_version=self.PREPROCESSING_VERSION,
         )

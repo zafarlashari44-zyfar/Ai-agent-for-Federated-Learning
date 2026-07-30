@@ -7,8 +7,20 @@ from typing import Protocol
 import numpy as np
 from numpy.typing import NDArray
 
+from reasoning_pipeline.application.ports.explainability_service import (
+    ExplainabilityServiceProtocol,
+)
+from reasoning_pipeline.application.ports.recording_attribution_compositor import (
+    RecordingAttributionCompositorProtocol,
+)
+from reasoning_pipeline.application.services.explainability_service import (
+    ExplainabilityService,
+)
 from reasoning_pipeline.baseline_adapter.classifier import (
     BaselineClassifier,
+)
+from reasoning_pipeline.domain.models.beat_analysis_result import (
+    BeatAnalysisResult,
 )
 from reasoning_pipeline.domain.models.clinical_report import (
     ClinicalReport,
@@ -27,7 +39,22 @@ from reasoning_pipeline.domain.models.narrative_result import (
 from reasoning_pipeline.domain.models.reasoning_result import (
     ReasoningResult,
 )
+from reasoning_pipeline.domain.models.recording_analysis_summary import (
+    RecordingAnalysisSummary,
+)
 from reasoning_pipeline.evidence.builder import EvidenceBuilder
+from reasoning_pipeline.infrastructure.explainability import (
+    RecordingAttributionCompositor,
+)
+from reasoning_pipeline.infrastructure.explainability.grad_cam_1d import (
+    GradCAM1D,
+)
+from reasoning_pipeline.infrastructure.explainability.policies import (
+    ExplainAbnormalBeatsPolicy,
+)
+from reasoning_pipeline.infrastructure.explainability.source_attribution_mapper import (
+    SourceAttributionMapper,
+)
 from reasoning_pipeline.narrative.generator import NarrativeGenerator
 from reasoning_pipeline.orchestration.analysis_result import (
     ECGAnalysisResult,
@@ -53,20 +80,20 @@ class FeatureExtractionServiceProtocol(Protocol):
 
 
 class ModelInputPreparerProtocol(Protocol):
-    def prepare_representative(
+    def prepare_all(
         self,
         *,
         signal: ECGSignal,
         features: FeatureSet,
-    ) -> PreparedBeat:
+    ) -> tuple[PreparedBeat, ...]:
         ...
 
 
 class ClassifierProtocol(Protocol):
-    def predict(
+    def predict_many(
         self,
-        beat: Sequence[float] | NDArray[np.float32],
-    ) -> ModelPrediction:
+        beats: Sequence[Sequence[float] | NDArray[np.float32]],
+    ) -> tuple[ModelPrediction, ...]:
         ...
 
 
@@ -123,6 +150,11 @@ class ECGAnalysisPipeline:
         reasoning_engine: ReasoningEngineProtocol,
         report_generator: ReportGeneratorProtocol,
         narrative_generator: NarrativeGeneratorProtocol,
+        explainability_service: ExplainabilityServiceProtocol | None = None,
+        recording_attribution_compositor: (
+            RecordingAttributionCompositorProtocol | None
+        ) = None,
+        recording_attribution_method: str = "grad-cam-1d",
     ) -> None:
         self.feature_extractor = feature_extractor
         self.model_input_preparer = model_input_preparer
@@ -131,6 +163,11 @@ class ECGAnalysisPipeline:
         self.reasoning_engine = reasoning_engine
         self.report_generator = report_generator
         self.narrative_generator = narrative_generator
+        self.explainability_service = explainability_service
+        self.recording_attribution_compositor = (
+            recording_attribution_compositor
+        )
+        self.recording_attribution_method = recording_attribution_method
 
     def analyse(
         self,
@@ -142,16 +179,75 @@ class ECGAnalysisPipeline:
         """
         features = self.feature_extractor.extract(signal)
 
-        prepared_beat = (
-            self.model_input_preparer.prepare_representative(
-                signal=signal,
-                features=features,
-            )
+        prepared_beats = self.model_input_preparer.prepare_all(
+            signal=signal,
+            features=features,
         )
 
-        prediction = self.classifier.predict(
-            prepared_beat.samples
+        predictions = self.classifier.predict_many(
+            tuple(beat.samples for beat in prepared_beats)
         )
+
+        if len(predictions) != len(prepared_beats):
+            raise RuntimeError(
+                "Classifier must return one prediction per prepared beat"
+            )
+
+        beat_results = tuple(
+            BeatAnalysisResult(
+                beat_index=beat.beat_index,
+                r_peak_sample_index=beat.r_peak_sample_index,
+                source_start_sample_index=beat.source_start_sample_index,
+                source_stop_sample_index_exclusive=(
+                    beat.source_stop_sample_index_exclusive
+                ),
+                r_peak_timestamp_seconds=beat.r_peak_timestamp_seconds,
+                source_start_timestamp_seconds=(
+                    beat.source_start_timestamp_seconds
+                ),
+                source_stop_timestamp_seconds_exclusive=(
+                    beat.source_stop_timestamp_seconds_exclusive
+                ),
+                sampling_rate_hz=beat.sampling_rate_hz,
+                prediction=prediction,
+            )
+            for beat, prediction in zip(
+                prepared_beats,
+                predictions,
+                strict=True,
+            )
+        )
+        recording_summary = RecordingAnalysisSummary.from_beat_results(
+            beat_results
+        )
+
+        recording_explanation = None
+        if self.explainability_service is not None:
+            recording_explanation = (
+                self.explainability_service.explain_recording(
+                    record_id=signal.record_id,
+                    prepared_beats=prepared_beats,
+                    beat_results=beat_results,
+                )
+            )
+
+        recording_attribution_overlay = None
+        if (
+            recording_explanation is not None
+            and self.recording_attribution_compositor is not None
+        ):
+            recording_attribution_overlay = (
+                self.recording_attribution_compositor.compose(
+                    total_source_samples=signal.sample_count,
+                    sampling_rate_hz=signal.sampling_rate_hz,
+                    recording_explanation=recording_explanation,
+                    method_id=self.recording_attribution_method,
+                )
+            )
+
+        representative_index = len(prepared_beats) // 2
+        prepared_beat = prepared_beats[representative_index]
+        prediction = predictions[representative_index]
 
         evidence = self.evidence_builder.build(
             record_id=signal.record_id,
@@ -174,10 +270,13 @@ class ECGAnalysisPipeline:
             features=features,
             prepared_beat=prepared_beat,
             prediction=prediction,
+            recording_summary=recording_summary,
             evidence=evidence,
             reasoning=reasoning,
             clinical_report=clinical_report,
             narrative=narrative,
+            recording_explanation=recording_explanation,
+            recording_attribution_overlay=recording_attribution_overlay,
         )
 
     def analyse_npy(
@@ -216,16 +315,29 @@ def create_default_pipeline(
     feature_extractor = ScribeV2FeatureExtractionService(
         morphology_extractor=MorphologyFeatureExtractor(),
     )
+    classifier = BaselineClassifier(
+        checkpoint_path=checkpoint_path,
+        device=device,
+    )
 
     return ECGAnalysisPipeline(
         feature_extractor=feature_extractor,
         model_input_preparer=ModelInputPreparer(),
-        classifier=BaselineClassifier(
-            checkpoint_path=checkpoint_path,
-            device=device,
-        ),
+        classifier=classifier,
         evidence_builder=EvidenceBuilder(),
         reasoning_engine=ReasoningEngine(),
         report_generator=ReportGenerator(),
         narrative_generator=NarrativeGenerator(),
+        explainability_service=ExplainabilityService(
+            explainers=(
+                GradCAM1D(
+                    model=classifier.model,
+                    target_layer=classifier.model.features[8],
+                    target_layer_name="features.8",
+                ),
+            ),
+            mapper=SourceAttributionMapper(),
+            selection_policy=ExplainAbnormalBeatsPolicy(),
+        ),
+        recording_attribution_compositor=RecordingAttributionCompositor(),
     )

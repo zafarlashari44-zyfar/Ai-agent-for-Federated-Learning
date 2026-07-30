@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from reasoning_pipeline.api.schemas.analyse import AnalysisResponse
 from reasoning_pipeline.domain.enums.statuses import (
     ConsistencyStatus,
     SignalQualityStatus,
@@ -111,14 +112,14 @@ class FeatureExtractorStub:
 
 @dataclass
 class InputPreparerStub:
-    value: PreparedBeat
+    value: tuple[PreparedBeat, ...]
 
-    def prepare_representative(
+    def prepare_all(
         self,
         *,
         signal: ECGSignal,
         features: FeatureSet,
-    ) -> PreparedBeat:
+    ) -> tuple[PreparedBeat, ...]:
         assert signal.record_id == "record-001"
         assert features.extraction_version == "test-extraction"
         return self.value
@@ -126,11 +127,29 @@ class InputPreparerStub:
 
 @dataclass
 class ClassifierStub:
-    value: ModelPrediction
+    value: tuple[ModelPrediction, ...]
 
-    def predict(self, beat):
-        assert len(beat) == 216
+    def predict_many(self, beats):
+        assert all(len(beat) == 216 for beat in beats)
         return self.value
+
+
+class ExplainabilityServiceStub:
+    def __init__(self) -> None:
+        self.called = False
+
+    def explain_recording(
+        self,
+        *,
+        record_id,
+        prepared_beats,
+        beat_results,
+    ):
+        self.called = True
+        assert record_id == "record-001"
+        assert len(prepared_beats) == 2
+        assert len(beat_results) == 2
+        return None
 
 
 class EvidenceBuilderStub:
@@ -218,20 +237,41 @@ def test_pipeline_returns_complete_analysis_result() -> None:
     features = _features()
     prediction = _prediction()
 
-    prepared_beat = PreparedBeat(
-        beat_index=1,
-        r_peak_sample_index=300,
-        samples=tuple(0.0 for _ in range(216)),
+    prepared_beats = (
+        PreparedBeat(
+            beat_index=0,
+            r_peak_sample_index=100,
+            source_start_sample_index=28,
+            source_stop_sample_index_exclusive=244,
+            r_peak_timestamp_seconds=100 / 360,
+            source_start_timestamp_seconds=28 / 360,
+            source_stop_timestamp_seconds_exclusive=244 / 360,
+            sampling_rate_hz=360.0,
+            samples=tuple(0.0 for _ in range(216)),
+        ),
+        PreparedBeat(
+            beat_index=1,
+            r_peak_sample_index=300,
+            source_start_sample_index=228,
+            source_stop_sample_index_exclusive=444,
+            r_peak_timestamp_seconds=300 / 360,
+            source_start_timestamp_seconds=228 / 360,
+            source_stop_timestamp_seconds_exclusive=444 / 360,
+            sampling_rate_hz=360.0,
+            samples=tuple(0.0 for _ in range(216)),
+        ),
     )
+    explainability_service = ExplainabilityServiceStub()
 
     pipeline = ECGAnalysisPipeline(
         feature_extractor=FeatureExtractorStub(features),
-        model_input_preparer=InputPreparerStub(prepared_beat),
-        classifier=ClassifierStub(prediction),
+        model_input_preparer=InputPreparerStub(prepared_beats),
+        classifier=ClassifierStub((prediction, prediction)),
         evidence_builder=EvidenceBuilderStub(),
         reasoning_engine=ReasoningEngineStub(),
         report_generator=ReportGeneratorStub(),
         narrative_generator=NarrativeGeneratorStub(),
+        explainability_service=explainability_service,
     )
 
     result = pipeline.analyse(signal)
@@ -239,11 +279,45 @@ def test_pipeline_returns_complete_analysis_result() -> None:
     assert result.record_id == "record-001"
     assert result.signal is signal
     assert result.features is features
-    assert result.prepared_beat is prepared_beat
+    assert result.prepared_beat is prepared_beats[1]
     assert result.prediction is prediction
+    assert result.recording_summary.total_valid_beats == 2
+    assert result.recording_summary.class_counts == (
+        ("N", 2),
+        ("S", 0),
+        ("V", 0),
+        ("F", 0),
+        ("Q", 0),
+    )
+    assert result.recording_summary.abnormal_beat_count == 0
+    assert result.recording_summary.abnormal_beat_percentage == 0.0
+    assert result.recording_summary.dominant_predicted_label == "N"
+    assert result.recording_explanation is None
+    assert result.recording_attribution_overlay is None
+    assert explainability_service.called
+    assert tuple(
+        result.beat_index
+        for result in result.recording_summary.beat_results
+    ) == (0, 1)
     assert result.evidence.prediction is prediction
     assert result.reasoning.evidence is result.evidence
     assert result.clinical_report.predicted_label == (
         "Normal Sinus Rhythm"
     )
     assert result.narrative.doctor_report == "Test doctor report."
+
+    api_response = AnalysisResponse.from_domain(result)
+    api_payload = api_response.model_dump(mode="json")
+    assert api_payload["recording_explanation"] is None
+    assert api_payload["recording_attribution_overlay"] is None
+
+    legacy_client_fields = {
+        "signal",
+        "prediction",
+        "recording_summary",
+        "evidence",
+        "reasoning",
+        "clinical_report",
+        "narrative",
+    }
+    assert legacy_client_fields <= api_payload.keys()

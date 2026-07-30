@@ -17,6 +17,15 @@ from reasoning_pipeline.domain.models.narrative_result import (
 from reasoning_pipeline.domain.models.reasoning_result import (
     ReasoningResult,
 )
+from reasoning_pipeline.domain.models.recording_analysis_summary import (
+    RecordingAnalysisSummary,
+)
+from reasoning_pipeline.domain.models.recording_attribution_overlay import (
+    RecordingAttributionOverlay,
+)
+from reasoning_pipeline.domain.models.recording_explanation import (
+    RecordingExplanation,
+)
 from reasoning_pipeline.orchestration.model_input_preparer import (
     PreparedBeat,
 )
@@ -36,10 +45,13 @@ class ECGAnalysisResult:
     features: FeatureSet
     prepared_beat: PreparedBeat
     prediction: ModelPrediction
+    recording_summary: RecordingAnalysisSummary
     evidence: EvidenceBundle
     reasoning: ReasoningResult
     clinical_report: ClinicalReport
     narrative: NarrativeResult
+    recording_explanation: RecordingExplanation | None = None
+    recording_attribution_overlay: RecordingAttributionOverlay | None = None
 
     def __post_init__(self) -> None:
         record_ids = {

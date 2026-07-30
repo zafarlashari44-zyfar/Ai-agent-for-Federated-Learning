@@ -122,3 +122,35 @@ def test_prediction_is_deterministic(
         second.probabilities,
         abs=1e-8,
     )
+
+
+def test_predict_many_matches_individual_predictions(
+    classifier: BaselineClassifier,
+) -> None:
+    beats = (
+        np.zeros(216, dtype=np.float32),
+        np.linspace(-1.0, 1.0, 216, dtype=np.float32),
+    )
+
+    batched = classifier.predict_many(beats)
+    individual = tuple(classifier.predict(beat) for beat in beats)
+
+    assert len(batched) == len(beats)
+    for batched_prediction, individual_prediction in zip(
+        batched,
+        individual,
+        strict=True,
+    ):
+        assert batched_prediction.predicted_class == (
+            individual_prediction.predicted_class
+        )
+        assert batched_prediction.probabilities == pytest.approx(
+            individual_prediction.probabilities,
+            abs=2e-7,
+        )
+
+
+def test_predict_many_accepts_empty_sequence(
+    classifier: BaselineClassifier,
+) -> None:
+    assert classifier.predict_many(()) == ()
