@@ -13,6 +13,7 @@ from reasoning_pipeline.domain.models.beat_analysis_result import (
 )
 from reasoning_pipeline.domain.models.beat_explanation import BeatExplanation
 from reasoning_pipeline.domain.models.clinical_report import ClinicalReport
+from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.domain.models.evidence_item import EvidenceItem
 from reasoning_pipeline.domain.models.model_prediction import ModelPrediction
 from reasoning_pipeline.domain.models.narrative_result import NarrativeResult
@@ -32,6 +33,36 @@ from reasoning_pipeline.domain.models.recording_explanation import (
 from reasoning_pipeline.orchestration.analysis_result import ECGAnalysisResult
 
 
+class SourceSignalMetadataResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    record_id: str
+    source_format: str | None
+    original_sampling_rate_hz: float | None
+    original_units: str | None
+    original_sample_count: int | None
+    original_duration_seconds: float | None
+    available_lead_names: tuple[str, ...]
+    selected_lead: str | None
+    warnings: tuple[str, ...]
+
+
+class HarmonisationMetadataResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_sampling_rate_hz: float | None
+    target_units: str | None
+    resampled: bool
+    unit_conversion_applied: str | None
+    resampling_method: str | None
+    resampling_up_factor: int | None
+    resampling_down_factor: int | None
+    harmonised_sample_count: int | None
+    harmonised_duration_seconds: float | None
+    transformations: tuple[str, ...]
+    warnings: tuple[str, ...]
+
+
 class SignalResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -41,6 +72,59 @@ class SignalResponse(BaseModel):
     duration_seconds: float
     source: str
     lead_name: str | None
+    source_format: str | None
+    original_sampling_rate_hz: float | None
+    lead_names: tuple[str, ...]
+    units: str | None
+    original_sample_count: int | None
+    original_duration_seconds: float | None
+    warnings: tuple[str, ...]
+    source_metadata: SourceSignalMetadataResponse
+    harmonisation_metadata: HarmonisationMetadataResponse
+
+    @classmethod
+    def from_domain(cls, signal: ECGSignal) -> SignalResponse:
+        return cls(
+            record_id=signal.record_id,
+            sampling_rate_hz=signal.sampling_rate_hz,
+            sample_count=signal.sample_count,
+            duration_seconds=signal.duration_seconds,
+            source=signal.source,
+            lead_name=signal.lead_name,
+            source_format=signal.source_format,
+            original_sampling_rate_hz=signal.original_sampling_rate_hz,
+            lead_names=signal.lead_names,
+            units=signal.units,
+            original_sample_count=signal.original_sample_count,
+            original_duration_seconds=signal.original_duration_seconds,
+            warnings=signal.warnings,
+            source_metadata=SourceSignalMetadataResponse(
+                record_id=signal.record_id,
+                source_format=signal.source_format,
+                original_sampling_rate_hz=signal.original_sampling_rate_hz,
+                original_units=signal.original_units,
+                original_sample_count=signal.original_sample_count,
+                original_duration_seconds=signal.original_duration_seconds,
+                available_lead_names=signal.lead_names,
+                selected_lead=signal.lead_name,
+                warnings=signal.warnings,
+            ),
+            harmonisation_metadata=HarmonisationMetadataResponse(
+                target_sampling_rate_hz=signal.target_sampling_rate_hz,
+                target_units=signal.target_units,
+                resampled=signal.resampled,
+                unit_conversion_applied=signal.unit_conversion_applied,
+                resampling_method=signal.resampling_method,
+                resampling_up_factor=signal.resampling_up_factor,
+                resampling_down_factor=signal.resampling_down_factor,
+                harmonised_sample_count=signal.harmonised_sample_count,
+                harmonised_duration_seconds=(
+                    signal.harmonised_duration_seconds
+                ),
+                transformations=signal.harmonisation_transformations,
+                warnings=signal.harmonisation_warnings,
+            ),
+        )
 
 
 class PredictionResponse(BaseModel):
@@ -670,14 +754,7 @@ class AnalysisResponse(BaseModel):
         evidence = result.evidence
 
         return cls(
-            signal=SignalResponse(
-                record_id=result.signal.record_id,
-                sampling_rate_hz=result.signal.sampling_rate_hz,
-                sample_count=result.signal.sample_count,
-                duration_seconds=result.signal.duration_seconds,
-                source=result.signal.source,
-                lead_name=result.signal.lead_name,
-            ),
+            signal=SignalResponse.from_domain(result.signal),
             prediction=PredictionResponse.from_domain(result.prediction),
             recording_summary=RecordingAnalysisSummaryResponse.from_domain(
                 result.recording_summary

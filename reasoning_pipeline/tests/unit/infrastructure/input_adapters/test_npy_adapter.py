@@ -59,7 +59,9 @@ def test_load_delegates_to_existing_scribe_input_service() -> None:
         source="mit-bih",
     )
 
-    assert returned_signal is signal
+    assert returned_signal.samples == signal.samples
+    assert returned_signal.source_format == "npy"
+    assert returned_signal.original_sample_count == signal.sample_count
     assert input_service.received_file_path == Path("record.npy")
     assert input_service.received_source == "mit-bih"
 

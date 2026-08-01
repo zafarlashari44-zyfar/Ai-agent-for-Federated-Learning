@@ -7,7 +7,13 @@ from typing import Protocol
 from reasoning_pipeline.application.ports.ecg_input_adapter import (
     ECGInputAdapterProtocol,
 )
+from reasoning_pipeline.application.ports.signal_harmoniser import (
+    SignalHarmoniserProtocol,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
+from reasoning_pipeline.infrastructure.input_adapters.format_detection import (
+    ECGFormatDetectionService,
+)
 from reasoning_pipeline.orchestration.analysis_result import (
     ECGAnalysisResult,
 )
@@ -36,6 +42,7 @@ class PipelineService:
         *,
         pipeline: AnalysisPipelineProtocol,
         input_adapters: Sequence[ECGInputAdapterProtocol],
+        signal_harmoniser: SignalHarmoniserProtocol,
     ) -> None:
         if not input_adapters:
             raise ValueError(
@@ -43,7 +50,9 @@ class PipelineService:
             )
 
         self._pipeline = pipeline
+        self._signal_harmoniser = signal_harmoniser
         self._input_adapters = tuple(input_adapters)
+        self._format_detection = ECGFormatDetectionService(self._input_adapters)
 
     @property
     def supported_suffixes(self) -> tuple[str, ...]:
@@ -59,10 +68,13 @@ class PipelineService:
         self,
         *,
         file_path: str | Path,
-        sampling_rate_hz: float,
+        sampling_rate_hz: float | None = None,
         record_id: str | None = None,
         source: str | None = None,
         lead_name: str | None = None,
+        signal_column: str | None = None,
+        units: str | None = None,
+        companion_file_path: str | Path | None = None,
     ) -> ECGAnalysisResult:
         """
         Load and analyse one complete ECG recording.
@@ -79,23 +91,19 @@ class PipelineService:
             record_id=record_id,
             source=source,
             lead_name=lead_name,
+            signal_column=signal_column,
+            units=units,
+            companion_file_path=companion_file_path,
         )
 
-        return self._pipeline.analyse(signal)
+        harmonised_signal = self._signal_harmoniser.harmonise(signal)
+        return self._pipeline.analyse(harmonised_signal)
 
     def _resolve_adapter(
         self,
         file_path: str | Path,
     ) -> ECGInputAdapterProtocol:
-        for adapter in self._input_adapters:
-            if adapter.supports(file_path):
-                return adapter
-
-        path = Path(file_path).expanduser()
-        supported = ", ".join(self.supported_suffixes)
-
-        raise UnsupportedECGFormatError(
-            "Unsupported ECG file format "
-            f"{path.suffix or '<no extension>'}. "
-            f"Supported formats are {supported}."
-        )
+        try:
+            return self._format_detection.detect(file_path)
+        except ValueError as exc:
+            raise UnsupportedECGFormatError(str(exc)) from exc

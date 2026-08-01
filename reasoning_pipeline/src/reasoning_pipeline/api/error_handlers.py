@@ -9,6 +9,8 @@ from reasoning_pipeline.application.services.pipeline_service import (
 )
 from reasoning_pipeline.domain.exceptions.pipeline_errors import (
     FeatureExtractionError,
+    InvalidSignalError,
+    UnsupportedSamplingRateError,
 )
 
 
@@ -45,7 +47,7 @@ def register_error_handlers(application: FastAPI) -> None:
         del request
 
         return JSONResponse(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
                 "error": "unsupported_ecg_format",
                 "detail": str(exception),
@@ -94,7 +96,6 @@ def register_error_handlers(application: FastAPI) -> None:
         error = "invalid_ecg_input"
 
         if "Unsupported ECG file format" in detail:
-            status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
             error = "unsupported_ecg_format"
 
         return JSONResponse(
@@ -103,6 +104,18 @@ def register_error_handlers(application: FastAPI) -> None:
                 "error": error,
                 "detail": detail,
             },
+        )
+
+    @application.exception_handler(InvalidSignalError)
+    @application.exception_handler(UnsupportedSamplingRateError)
+    async def handle_invalid_signal(
+        request: Request,
+        exception: InvalidSignalError | UnsupportedSamplingRateError,
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"error": "invalid_ecg_input", "detail": str(exception)},
         )
 
     @application.exception_handler(RuntimeError)

@@ -40,7 +40,11 @@ class StubAdapter:
         record_id: str | None = None,
         source: str | None = None,
         lead_name: str | None = None,
+        signal_column: str | None = None,
+        units: str | None = None,
+        companion_file_path: str | Path | None = None,
     ) -> ECGSignal:
+        del record_id, source, lead_name, signal_column, units, companion_file_path
         self.received_file_path = file_path
         self.received_sampling_rate_hz = sampling_rate_hz
         return self.signal
@@ -54,6 +58,16 @@ class StubPipeline:
     def analyse(self, signal: ECGSignal) -> ECGAnalysisResult:
         self.received_signal = signal
         return self.result
+
+
+class StubHarmoniser:
+    def __init__(self, signal: ECGSignal | None = None) -> None:
+        self.signal = signal
+        self.received_signal: ECGSignal | None = None
+
+    def harmonise(self, signal: ECGSignal) -> ECGSignal:
+        self.received_signal = signal
+        return self.signal or signal
 
 
 def make_signal() -> ECGSignal:
@@ -79,6 +93,7 @@ def test_requires_at_least_one_input_adapter() -> None:
         PipelineService(
             pipeline=pipeline,
             input_adapters=(),
+            signal_harmoniser=StubHarmoniser(),
         )
 
 
@@ -98,6 +113,7 @@ def test_reports_supported_suffixes_in_sorted_order() -> None:
                 signal=signal,
             ),
         ),
+        signal_harmoniser=StubHarmoniser(),
     )
 
     assert service.supported_suffixes == (
@@ -114,10 +130,12 @@ def test_analyse_file_uses_matching_adapter_and_pipeline() -> None:
         signal=signal,
     )
     pipeline = StubPipeline(result)
+    harmoniser = StubHarmoniser()
 
     service = PipelineService(
         pipeline=pipeline,
         input_adapters=(adapter,),
+        signal_harmoniser=harmoniser,
     )
 
     returned_result = service.analyse_file(
@@ -129,6 +147,7 @@ def test_analyse_file_uses_matching_adapter_and_pipeline() -> None:
     assert adapter.received_file_path == "record.npy"
     assert adapter.received_sampling_rate_hz == 360.0
     assert pipeline.received_signal is signal
+    assert harmoniser.received_signal is signal
 
 
 def test_analyse_file_rejects_unsupported_format() -> None:
@@ -143,6 +162,7 @@ def test_analyse_file_rejects_unsupported_format() -> None:
                 signal=signal,
             ),
         ),
+        signal_harmoniser=StubHarmoniser(),
     )
 
     with pytest.raises(

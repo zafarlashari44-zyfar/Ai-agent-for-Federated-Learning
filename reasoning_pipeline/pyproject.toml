@@ -17,6 +17,7 @@ dependencies = [
     "ollama>=0.6.2,<0.7",
     "scipy>=1.13",
     "torch>=2.2.2,<2.3",
+    "wfdb>=4.1,<5.0",
 ]
 
 [project.optional-dependencies]
@@ -63,3 +64,14 @@ strict = true
 packages = ["reasoning_pipeline"]
 mypy_path = "src"
 
+[[tool.mypy.overrides]]
+module = ["neurokit2", "pandas", "wfdb"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "reasoning_pipeline.scribe_v2.r_peak_detector"
+disable_error_code = ["call-overload"]
+
+[[tool.mypy.overrides]]
+module = "reasoning_pipeline.scribe_v2.morphology_feature_extractor"
+disable_error_code = ["arg-type"]

@@ -7,11 +7,26 @@ from pathlib import Path
 from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
 )
+from reasoning_pipeline.infrastructure.input_adapters.csv_adapter import (
+    CsvECGInputAdapter,
+)
 from reasoning_pipeline.infrastructure.input_adapters.npy_adapter import (
     NpyECGInputAdapter,
 )
+from reasoning_pipeline.infrastructure.input_adapters.text_adapter import (
+    TextECGInputAdapter,
+)
+from reasoning_pipeline.infrastructure.input_adapters.wfdb_adapter import (
+    WfdbECGInputAdapter,
+)
+from reasoning_pipeline.infrastructure.signal_harmonisation import (
+    ScipySignalHarmoniser,
+)
 from reasoning_pipeline.orchestration.ecg_analysis_pipeline import (
     create_default_pipeline,
+)
+from reasoning_pipeline.orchestration.model_input_preparer import (
+    ModelInputPreparer,
 )
 
 CHECKPOINT_ENVIRONMENT_VARIABLE = "ECG_CHECKPOINT_PATH"
@@ -50,5 +65,16 @@ def get_pipeline_service() -> PipelineService:
 
     return PipelineService(
         pipeline=pipeline,
-        input_adapters=(NpyECGInputAdapter(),),
+        input_adapters=(
+            NpyECGInputAdapter(),
+            CsvECGInputAdapter(),
+            TextECGInputAdapter(),
+            WfdbECGInputAdapter(),
+        ),
+        signal_harmoniser=ScipySignalHarmoniser(
+            target_sampling_rate_hz=(
+                ModelInputPreparer.EXPECTED_SAMPLING_RATE_HZ
+            ),
+            allow_legacy_npy_missing_units=True,
+        ),
     )

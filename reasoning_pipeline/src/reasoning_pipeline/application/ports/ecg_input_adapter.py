@@ -26,9 +26,12 @@ class ECGInputAdapterProtocol(Protocol):
         self,
         *,
         file_path: str | Path,
-        sampling_rate_hz: float,
+        sampling_rate_hz: float | None = None,
         record_id: str | None = None,
         source: str | None = None,
         lead_name: str | None = None,
+        signal_column: str | None = None,
+        units: str | None = None,
+        companion_file_path: str | Path | None = None,
     ) -> ECGSignal:
         ...

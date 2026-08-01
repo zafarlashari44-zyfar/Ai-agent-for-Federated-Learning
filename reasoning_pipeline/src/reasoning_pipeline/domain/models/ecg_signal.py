@@ -8,6 +8,25 @@ class ECGSignal:
     sampling_rate_hz: float
     source: str
     lead_name: str | None = None
+    source_format: str | None = None
+    original_sampling_rate_hz: float | None = None
+    lead_names: tuple[str, ...] = ()
+    units: str | None = None
+    original_sample_count: int | None = None
+    original_duration_seconds: float | None = None
+    warnings: tuple[str, ...] = ()
+    original_units: str | None = None
+    target_sampling_rate_hz: float | None = None
+    target_units: str | None = None
+    resampled: bool = False
+    unit_conversion_applied: str | None = None
+    resampling_method: str | None = None
+    resampling_up_factor: int | None = None
+    resampling_down_factor: int | None = None
+    harmonised_sample_count: int | None = None
+    harmonised_duration_seconds: float | None = None
+    harmonisation_transformations: tuple[str, ...] = ()
+    harmonisation_warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.record_id.strip():
@@ -21,6 +40,9 @@ class ECGSignal:
 
         if not self.source.strip():
             raise ValueError("source cannot be empty")
+
+        if self.original_sample_count is not None and self.original_sample_count <= 0:
+            raise ValueError("original_sample_count must be greater than zero")
 
     @property
     def sample_count(self) -> int:
