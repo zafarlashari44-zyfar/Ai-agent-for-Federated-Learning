@@ -6,7 +6,11 @@ from reasoning_pipeline.api.app import (
     API_VERSION,
     create_app,
 )
+from reasoning_pipeline.api.dependencies import get_pipeline_service
 from reasoning_pipeline.api.schemas.analyse import SignalResponse
+from reasoning_pipeline.domain.exceptions.pipeline_errors import (
+    SignalSuitabilityRejectedError,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 
 
@@ -109,3 +113,31 @@ def test_signal_response_serializes_source_and_harmonised_metadata() -> None:
     assert payload["source_metadata"]["original_units"] == "uV"
     assert payload["harmonisation_metadata"]["target_sampling_rate_hz"] == 360.0
     assert payload["harmonisation_metadata"]["resampled"] is True
+
+
+class RejectingService:
+    supported_suffixes = (".npy",)
+
+    def analyse_file(self, **kwargs: object) -> None:
+        raise SignalSuitabilityRejectedError(
+            ("No technically detectable R peaks were found.",)
+        )
+
+
+def test_unsuitable_upload_returns_structured_http_422() -> None:
+    application = create_app()
+    application.dependency_overrides[get_pipeline_service] = RejectingService
+    with TestClient(application) as client:
+        response = client.post(
+            "/api/v1/analyse",
+            files={"file": ("record.npy", b"not-used")},
+            data={"sampling_rate_hz": "360"},
+        )
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": "signal_suitability_rejected",
+        "detail": "The ECG is not technically suitable for analysis.",
+        "rejection_reasons": [
+            "No technically detectable R peaks were found."
+        ],
+    }

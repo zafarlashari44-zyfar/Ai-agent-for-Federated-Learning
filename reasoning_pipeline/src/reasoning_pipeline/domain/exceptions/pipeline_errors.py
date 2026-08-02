@@ -10,6 +10,14 @@ class UnsupportedSamplingRateError(ReasoningPipelineError):
     """Raised when the sampling rate is unsupported."""
 
 
+class SignalSuitabilityRejectedError(ReasoningPipelineError):
+    """Raised when an ECG fails the pre-inference technical gate."""
+
+    def __init__(self, reasons: tuple[str, ...]) -> None:
+        self.reasons = reasons
+        super().__init__("Signal suitability rejected: " + "; ".join(reasons))
+
+
 class FeatureExtractionError(ReasoningPipelineError):
     """Raised when ECG feature extraction fails."""
 

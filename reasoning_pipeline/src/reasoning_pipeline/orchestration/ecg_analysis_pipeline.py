@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from reasoning_pipeline.application.ports.explainability_service import (
     ExplainabilityServiceProtocol,
 )
+from reasoning_pipeline.application.ports.ood_assessor import OODAssessorProtocol
 from reasoning_pipeline.application.ports.recording_attribution_compositor import (
     RecordingAttributionCompositorProtocol,
 )
@@ -19,6 +20,7 @@ from reasoning_pipeline.application.services.explainability_service import (
 from reasoning_pipeline.baseline_adapter.classifier import (
     BaselineClassifier,
 )
+from reasoning_pipeline.domain.enums.statuses import AnalysisScope, OODStatus
 from reasoning_pipeline.domain.models.beat_analysis_result import (
     BeatAnalysisResult,
 )
@@ -30,9 +32,7 @@ from reasoning_pipeline.domain.models.evidence_bundle import (
     EvidenceBundle,
 )
 from reasoning_pipeline.domain.models.feature_set import FeatureSet
-from reasoning_pipeline.domain.models.model_prediction import (
-    ModelPrediction,
-)
+from reasoning_pipeline.domain.models.model_prediction import ModelPrediction
 from reasoning_pipeline.domain.models.narrative_result import (
     NarrativeResult,
 )
@@ -41,6 +41,9 @@ from reasoning_pipeline.domain.models.reasoning_result import (
 )
 from reasoning_pipeline.domain.models.recording_analysis_summary import (
     RecordingAnalysisSummary,
+)
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
 )
 from reasoning_pipeline.evidence.builder import EvidenceBuilder
 from reasoning_pipeline.infrastructure.explainability import (
@@ -55,6 +58,7 @@ from reasoning_pipeline.infrastructure.explainability.policies import (
 from reasoning_pipeline.infrastructure.explainability.source_attribution_mapper import (
     SourceAttributionMapper,
 )
+from reasoning_pipeline.infrastructure.ood_assessment import HeuristicOODAssessor
 from reasoning_pipeline.narrative.generator import NarrativeGenerator
 from reasoning_pipeline.orchestration.analysis_result import (
     ECGAnalysisResult,
@@ -155,6 +159,7 @@ class ECGAnalysisPipeline:
             RecordingAttributionCompositorProtocol | None
         ) = None,
         recording_attribution_method: str = "grad-cam-1d",
+        ood_assessor: OODAssessorProtocol | None = None,
     ) -> None:
         self.feature_extractor = feature_extractor
         self.model_input_preparer = model_input_preparer
@@ -168,10 +173,13 @@ class ECGAnalysisPipeline:
             recording_attribution_compositor
         )
         self.recording_attribution_method = recording_attribution_method
+        self.ood_assessor = ood_assessor
 
     def analyse(
         self,
         signal: ECGSignal,
+        *,
+        suitability_assessment: SignalSuitabilityAssessment | None = None,
     ) -> ECGAnalysisResult:
         """
         Analyse one validated ECG signal from feature extraction through
@@ -221,6 +229,14 @@ class ECGAnalysisPipeline:
             beat_results
         )
 
+        ood_assessment = None
+        if self.ood_assessor is not None and suitability_assessment is not None:
+            ood_assessment = self.ood_assessor.assess(
+                signal=signal,
+                predictions=predictions,
+                suitability=suitability_assessment,
+            )
+
         recording_explanation = None
         if self.explainability_service is not None:
             recording_explanation = (
@@ -265,6 +281,33 @@ class ECGAnalysisPipeline:
             clinical_report
         )
 
+        analysis_scope = self._analysis_scope(signal, suitability_assessment)
+        external = analysis_scope is AnalysisScope.EXPLORATORY_EXTERNAL_SOURCE
+        model_scope_statement = (
+            "Predictions are limited to the MIT-BIH AAMI classes "
+            "N, S, V, F and Q."
+        )
+        recommended_interpretation = (
+            "This external recording is outside the model's validated "
+            "training source, so results are exploratory."
+            if external
+            else "Interpret results within the validated MIT-BIH-compatible scope."
+        )
+        analysis_warnings = list(
+            suitability_assessment.warnings
+            if suitability_assessment is not None
+            else ()
+        )
+        if external:
+            analysis_warnings.append(
+                "External-source predictions are exploratory, not clinically validated."
+            )
+        if (
+            ood_assessment is not None
+            and ood_assessment.status is OODStatus.LIKELY_OUT_OF_DISTRIBUTION
+        ):
+            analysis_warnings.extend(ood_assessment.warnings)
+
         return ECGAnalysisResult(
             signal=signal,
             features=features,
@@ -277,7 +320,28 @@ class ECGAnalysisPipeline:
             narrative=narrative,
             recording_explanation=recording_explanation,
             recording_attribution_overlay=recording_attribution_overlay,
+            signal_suitability=suitability_assessment,
+            ood_assessment=ood_assessment,
+            analysis_scope=analysis_scope,
+            model_scope_statement=model_scope_statement,
+            recommended_interpretation=recommended_interpretation,
+            analysis_warnings=tuple(dict.fromkeys(analysis_warnings)),
         )
+
+    @staticmethod
+    def _analysis_scope(
+        signal: ECGSignal,
+        suitability: SignalSuitabilityAssessment | None,
+    ) -> AnalysisScope:
+        if suitability is not None and not suitability.suitable_for_processing:
+            return AnalysisScope.UNSUPPORTED
+        mit_bih_compatible = "mit-bih" in signal.source.casefold() or (
+            signal.source_format == "npy"
+            and signal.lead_name in {None, "MLII", "II", "Lead II"}
+        )
+        if mit_bih_compatible:
+            return AnalysisScope.VALIDATED_MIT_BIH_COMPATIBLE
+        return AnalysisScope.EXPLORATORY_EXTERNAL_SOURCE
 
     def analyse_npy(
         self,
@@ -319,7 +383,6 @@ def create_default_pipeline(
         checkpoint_path=checkpoint_path,
         device=device,
     )
-
     return ECGAnalysisPipeline(
         feature_extractor=feature_extractor,
         model_input_preparer=ModelInputPreparer(),
@@ -340,4 +403,5 @@ def create_default_pipeline(
             selection_policy=ExplainAbnormalBeatsPolicy(),
         ),
         recording_attribution_compositor=RecordingAttributionCompositor(),
+        ood_assessor=HeuristicOODAssessor(),
     )

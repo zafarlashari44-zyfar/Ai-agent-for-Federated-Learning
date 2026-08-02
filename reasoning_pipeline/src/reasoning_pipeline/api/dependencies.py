@@ -22,6 +22,9 @@ from reasoning_pipeline.infrastructure.input_adapters.wfdb_adapter import (
 from reasoning_pipeline.infrastructure.signal_harmonisation import (
     ScipySignalHarmoniser,
 )
+from reasoning_pipeline.infrastructure.signal_suitability import (
+    HeuristicSignalSuitabilityAssessor,
+)
 from reasoning_pipeline.orchestration.ecg_analysis_pipeline import (
     create_default_pipeline,
 )
@@ -77,4 +80,5 @@ def get_pipeline_service() -> PipelineService:
             ),
             allow_legacy_npy_missing_units=True,
         ),
+        suitability_assessor=HeuristicSignalSuitabilityAssessor(),
     )

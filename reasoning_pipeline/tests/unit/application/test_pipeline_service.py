@@ -7,7 +7,11 @@ from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
     UnsupportedECGFormatError,
 )
+from reasoning_pipeline.domain.enums.statuses import SignalSuitabilityStatus
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
+)
 from reasoning_pipeline.orchestration.analysis_result import (
     ECGAnalysisResult,
 )
@@ -55,7 +59,12 @@ class StubPipeline:
         self.result = result
         self.received_signal: ECGSignal | None = None
 
-    def analyse(self, signal: ECGSignal) -> ECGAnalysisResult:
+    def analyse(
+        self,
+        signal: ECGSignal,
+        *,
+        suitability_assessment: SignalSuitabilityAssessment | None = None,
+    ) -> ECGAnalysisResult:
         self.received_signal = signal
         return self.result
 
@@ -68,6 +77,25 @@ class StubHarmoniser:
     def harmonise(self, signal: ECGSignal) -> ECGSignal:
         self.received_signal = signal
         return self.signal or signal
+
+
+class StubSuitabilityAssessor:
+    def assess(self, signal: ECGSignal) -> SignalSuitabilityAssessment:
+        return SignalSuitabilityAssessment(
+            status=SignalSuitabilityStatus.ACCEPTED,
+            suitable_for_processing=True,
+            quality_score=1.0,
+            duration_seconds=signal.duration_seconds,
+            sampling_rate_hz=signal.sampling_rate_hz,
+            selected_lead=signal.lead_name,
+            units=signal.units,
+            detected_r_peak_count=1,
+            estimated_heart_rate_bpm=None,
+            finite_sample_ratio=1.0,
+            flatline_percentage=0.0,
+            clipping_percentage=0.0,
+            noise_score=0.0,
+        )
 
 
 def make_signal() -> ECGSignal:
@@ -94,6 +122,7 @@ def test_requires_at_least_one_input_adapter() -> None:
             pipeline=pipeline,
             input_adapters=(),
             signal_harmoniser=StubHarmoniser(),
+            suitability_assessor=StubSuitabilityAssessor(),
         )
 
 
@@ -114,6 +143,7 @@ def test_reports_supported_suffixes_in_sorted_order() -> None:
             ),
         ),
         signal_harmoniser=StubHarmoniser(),
+        suitability_assessor=StubSuitabilityAssessor(),
     )
 
     assert service.supported_suffixes == (
@@ -136,6 +166,7 @@ def test_analyse_file_uses_matching_adapter_and_pipeline() -> None:
         pipeline=pipeline,
         input_adapters=(adapter,),
         signal_harmoniser=harmoniser,
+        suitability_assessor=StubSuitabilityAssessor(),
     )
 
     returned_result = service.analyse_file(
@@ -163,6 +194,7 @@ def test_analyse_file_rejects_unsupported_format() -> None:
             ),
         ),
         signal_harmoniser=StubHarmoniser(),
+        suitability_assessor=StubSuitabilityAssessor(),
     )
 
     with pytest.raises(

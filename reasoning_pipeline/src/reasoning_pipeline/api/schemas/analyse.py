@@ -3,8 +3,11 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from reasoning_pipeline.domain.enums.statuses import (
+    AnalysisScope,
     ConsistencyStatus,
     EvidenceDirection,
+    OODStatus,
+    SignalSuitabilityStatus,
 )
 from reasoning_pipeline.domain.models.attribution_map import AttributionMap
 from reasoning_pipeline.domain.models.attribution_point import AttributionPoint
@@ -725,6 +728,41 @@ class NarrativeResponse(BaseModel):
         )
 
 
+class SignalSuitabilityResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: SignalSuitabilityStatus
+    suitable_for_processing: bool
+    quality_score: float
+    duration_seconds: float
+    sampling_rate_hz: float
+    selected_lead: str | None
+    units: str | None
+    detected_r_peak_count: int
+    estimated_heart_rate_bpm: float | None
+    finite_sample_ratio: float
+    flatline_percentage: float
+    clipping_percentage: float
+    noise_score: float
+    warnings: tuple[str, ...]
+    rejection_reasons: tuple[str, ...]
+
+
+class OODAssessmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: OODStatus
+    heuristic_score: int
+    maximum_class_probability: float
+    normalized_prediction_entropy: float
+    q_class_proportion: float
+    low_confidence_beat_proportion: float
+    probability_instability: float
+    indicators: tuple[str, ...]
+    reasons: tuple[str, ...]
+    warnings: tuple[str, ...]
+
+
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -735,6 +773,14 @@ class AnalysisResponse(BaseModel):
     reasoning: ReasoningResponse
     clinical_report: ClinicalReportResponse
     narrative: NarrativeResponse
+    input_accepted: bool
+    model_prediction_produced: bool
+    signal_suitability: SignalSuitabilityResponse | None
+    ood_assessment: OODAssessmentResponse | None
+    analysis_scope: AnalysisScope
+    model_scope_statement: str
+    recommended_interpretation: str
+    analysis_warnings: tuple[str, ...]
     recording_explanation: RecordingExplanationResponse | None = None
     recording_attribution_overlay: (
         CompactRecordingAttributionOverlayResponse | None
@@ -780,6 +826,28 @@ class AnalysisResponse(BaseModel):
                 result.clinical_report
             ),
             narrative=NarrativeResponse.from_domain(result.narrative),
+            input_accepted=(
+                result.signal_suitability.suitable_for_processing
+                if result.signal_suitability is not None
+                else True
+            ),
+            model_prediction_produced=True,
+            signal_suitability=(
+                SignalSuitabilityResponse(
+                    **result.signal_suitability.__dict__
+                )
+                if result.signal_suitability is not None
+                else None
+            ),
+            ood_assessment=(
+                OODAssessmentResponse(**result.ood_assessment.__dict__)
+                if result.ood_assessment is not None
+                else None
+            ),
+            analysis_scope=result.analysis_scope,
+            model_scope_statement=result.model_scope_statement,
+            recommended_interpretation=result.recommended_interpretation,
+            analysis_warnings=result.analysis_warnings,
             recording_explanation=(
                 RecordingExplanationResponse.from_domain(
                     result.recording_explanation

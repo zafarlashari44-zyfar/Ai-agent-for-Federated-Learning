@@ -10,6 +10,7 @@ from reasoning_pipeline.application.services.pipeline_service import (
 from reasoning_pipeline.domain.exceptions.pipeline_errors import (
     FeatureExtractionError,
     InvalidSignalError,
+    SignalSuitabilityRejectedError,
     UnsupportedSamplingRateError,
 )
 
@@ -116,6 +117,21 @@ def register_error_handlers(application: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={"error": "invalid_ecg_input", "detail": str(exception)},
+        )
+
+    @application.exception_handler(SignalSuitabilityRejectedError)
+    async def handle_unsuitable_signal(
+        request: Request,
+        exception: SignalSuitabilityRejectedError,
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={
+                "error": "signal_suitability_rejected",
+                "detail": "The ECG is not technically suitable for analysis.",
+                "rejection_reasons": exception.reasons,
+            },
         )
 
     @application.exception_handler(RuntimeError)

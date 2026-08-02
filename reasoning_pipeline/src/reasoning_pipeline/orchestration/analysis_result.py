@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from reasoning_pipeline.domain.enums.statuses import AnalysisScope
 from reasoning_pipeline.domain.models.clinical_report import (
     ClinicalReport,
 )
@@ -8,12 +9,11 @@ from reasoning_pipeline.domain.models.evidence_bundle import (
     EvidenceBundle,
 )
 from reasoning_pipeline.domain.models.feature_set import FeatureSet
-from reasoning_pipeline.domain.models.model_prediction import (
-    ModelPrediction,
-)
+from reasoning_pipeline.domain.models.model_prediction import ModelPrediction
 from reasoning_pipeline.domain.models.narrative_result import (
     NarrativeResult,
 )
+from reasoning_pipeline.domain.models.ood_assessment import OODAssessment
 from reasoning_pipeline.domain.models.reasoning_result import (
     ReasoningResult,
 )
@@ -25,6 +25,9 @@ from reasoning_pipeline.domain.models.recording_attribution_overlay import (
 )
 from reasoning_pipeline.domain.models.recording_explanation import (
     RecordingExplanation,
+)
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
 )
 from reasoning_pipeline.orchestration.model_input_preparer import (
     PreparedBeat,
@@ -52,6 +55,12 @@ class ECGAnalysisResult:
     narrative: NarrativeResult
     recording_explanation: RecordingExplanation | None = None
     recording_attribution_overlay: RecordingAttributionOverlay | None = None
+    signal_suitability: SignalSuitabilityAssessment | None = None
+    ood_assessment: OODAssessment | None = None
+    analysis_scope: AnalysisScope = AnalysisScope.UNSUPPORTED
+    model_scope_statement: str = ""
+    recommended_interpretation: str = ""
+    analysis_warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         record_ids = {

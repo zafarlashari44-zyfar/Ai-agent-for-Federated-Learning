@@ -12,6 +12,7 @@ from reasoning_pipeline.domain.models.model_prediction import ModelPrediction
 from reasoning_pipeline.domain.models.morphology_features import (
     MorphologyFeatures,
 )
+from reasoning_pipeline.domain.models.ood_assessment import OODAssessment
 from reasoning_pipeline.domain.models.r_peak_series import RPeakSeries
 from reasoning_pipeline.domain.models.reasoning_result import ReasoningResult
 from reasoning_pipeline.domain.models.recording_analysis_summary import (
@@ -28,6 +29,9 @@ from reasoning_pipeline.domain.models.recording_explanation import (
 )
 from reasoning_pipeline.domain.models.rhythm_features import RhythmFeatures
 from reasoning_pipeline.domain.models.signal_quality import SignalQuality
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
+)
 
 __all__ = [
     "AttributionMap",
@@ -40,6 +44,7 @@ __all__ = [
     "FeatureSet",
     "ModelPrediction",
     "MorphologyFeatures",
+    "OODAssessment",
     "RPeakSeries",
     "RecordingAnalysisSummary",
     "RecordingAttributionOverlay",
@@ -48,4 +53,5 @@ __all__ = [
     "ReasoningResult",
     "RhythmFeatures",
     "SignalQuality",
+    "SignalSuitabilityAssessment",
 ]

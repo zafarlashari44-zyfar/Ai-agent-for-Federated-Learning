@@ -10,7 +10,16 @@ from reasoning_pipeline.application.ports.ecg_input_adapter import (
 from reasoning_pipeline.application.ports.signal_harmoniser import (
     SignalHarmoniserProtocol,
 )
+from reasoning_pipeline.application.ports.signal_suitability_assessor import (
+    SignalSuitabilityAssessorProtocol,
+)
+from reasoning_pipeline.domain.exceptions.pipeline_errors import (
+    SignalSuitabilityRejectedError,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
+)
 from reasoning_pipeline.infrastructure.input_adapters.format_detection import (
     ECGFormatDetectionService,
 )
@@ -20,7 +29,12 @@ from reasoning_pipeline.orchestration.analysis_result import (
 
 
 class AnalysisPipelineProtocol(Protocol):
-    def analyse(self, signal: ECGSignal) -> ECGAnalysisResult:
+    def analyse(
+        self,
+        signal: ECGSignal,
+        *,
+        suitability_assessment: SignalSuitabilityAssessment | None = None,
+    ) -> ECGAnalysisResult:
         ...
 
 
@@ -43,6 +57,7 @@ class PipelineService:
         pipeline: AnalysisPipelineProtocol,
         input_adapters: Sequence[ECGInputAdapterProtocol],
         signal_harmoniser: SignalHarmoniserProtocol,
+        suitability_assessor: SignalSuitabilityAssessorProtocol,
     ) -> None:
         if not input_adapters:
             raise ValueError(
@@ -51,6 +66,7 @@ class PipelineService:
 
         self._pipeline = pipeline
         self._signal_harmoniser = signal_harmoniser
+        self._suitability_assessor = suitability_assessor
         self._input_adapters = tuple(input_adapters)
         self._format_detection = ECGFormatDetectionService(self._input_adapters)
 
@@ -97,7 +113,13 @@ class PipelineService:
         )
 
         harmonised_signal = self._signal_harmoniser.harmonise(signal)
-        return self._pipeline.analyse(harmonised_signal)
+        suitability = self._suitability_assessor.assess(harmonised_signal)
+        if not suitability.suitable_for_processing:
+            raise SignalSuitabilityRejectedError(suitability.rejection_reasons)
+        return self._pipeline.analyse(
+            harmonised_signal,
+            suitability_assessment=suitability,
+        )
 
     def _resolve_adapter(
         self,

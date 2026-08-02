@@ -7,7 +7,11 @@ import pytest
 from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
 )
+from reasoning_pipeline.domain.enums.statuses import SignalSuitabilityStatus
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
+)
 from reasoning_pipeline.infrastructure.signal_harmonisation import (
     ScipySignalHarmoniser,
 )
@@ -170,9 +174,33 @@ class Pipeline:
     def __init__(self) -> None:
         self.received_signal: ECGSignal | None = None
 
-    def analyse(self, signal: ECGSignal) -> ECGAnalysisResult:
+    def analyse(
+        self,
+        signal: ECGSignal,
+        *,
+        suitability_assessment: SignalSuitabilityAssessment | None = None,
+    ) -> ECGAnalysisResult:
         self.received_signal = signal
         return cast(ECGAnalysisResult, object())
+
+
+class SuitabilityAssessor:
+    def assess(self, signal: ECGSignal) -> SignalSuitabilityAssessment:
+        return SignalSuitabilityAssessment(
+            status=SignalSuitabilityStatus.ACCEPTED,
+            suitable_for_processing=True,
+            quality_score=1.0,
+            duration_seconds=signal.duration_seconds,
+            sampling_rate_hz=signal.sampling_rate_hz,
+            selected_lead=signal.lead_name,
+            units=signal.units,
+            detected_r_peak_count=1,
+            estimated_heart_rate_bpm=None,
+            finite_sample_ratio=1.0,
+            flatline_percentage=0.0,
+            clipping_percentage=0.0,
+            noise_score=0.0,
+        )
 
 
 def test_adapter_harmoniser_pipeline_integration() -> None:
@@ -181,6 +209,7 @@ def test_adapter_harmoniser_pipeline_integration() -> None:
         pipeline=pipeline,
         input_adapters=(Adapter(make_signal(sampling_rate_hz=250.0)),),
         signal_harmoniser=harmoniser(),
+        suitability_assessor=SuitabilityAssessor(),
     )
     result = service.analyse_file(file_path="record.csv")
     assert result is not None

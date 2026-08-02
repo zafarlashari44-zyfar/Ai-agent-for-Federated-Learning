@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from reasoning_pipeline.api.schemas.analyse import AnalysisResponse
 from reasoning_pipeline.domain.enums.statuses import (
+    AnalysisScope,
     ConsistencyStatus,
     SignalQualityStatus,
 )
@@ -294,6 +295,7 @@ def test_pipeline_returns_complete_analysis_result() -> None:
     assert result.recording_summary.dominant_predicted_label == "N"
     assert result.recording_explanation is None
     assert result.recording_attribution_overlay is None
+    assert result.analysis_scope is AnalysisScope.EXPLORATORY_EXTERNAL_SOURCE
     assert explainability_service.called
     assert tuple(
         result.beat_index
