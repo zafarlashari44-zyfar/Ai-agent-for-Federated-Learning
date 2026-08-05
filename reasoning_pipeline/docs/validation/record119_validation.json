@@ -1,0 +1,16 @@
+{
+  "record": "MIT-BIH 119",
+  "sampling_rate_hz": 360.0,
+  "tolerance_ms": 100.0,
+  "expert_beats": 1987,
+  "detected_beats": 1988,
+  "true_positives": 1987,
+  "false_positives": 1,
+  "false_negatives": 0,
+  "precision": 0.9994969818913481,
+  "recall": 1.0,
+  "f1_score": 0.999748427672956,
+  "mean_timing_error_ms": 1.730693955152939,
+  "mean_absolute_error_ms": 1.7698372756248952,
+  "maximum_absolute_error_ms": 27.777777777777775
+}
