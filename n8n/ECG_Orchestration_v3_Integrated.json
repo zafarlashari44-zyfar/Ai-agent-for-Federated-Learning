@@ -1,0 +1,602 @@
+{
+  "name": "ECG Orchestration v3 - Integrated with FL Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "dd0c2a20-6b09-49ea-80c5-d6c7878a38e4",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "/data/shared/n8n_cohort.json",
+        "options": {}
+      },
+      "id": "13dc3d6c-ed6e-47f7-92a9-4e8303a9041e",
+      "name": "Read FL Cohort File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "id": "67a37efd-fe15-446e-b4e5-b8fb50df7a8e",
+      "name": "Parse Cohort JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1160,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------------------\n// SPLIT COHORT INTO PATIENT ITEMS\n// Input: the parsed n8n_cohort.json produced by build_cohort.py, which is the\n// join of Zafar's uncertainty output and Denis's SHAP output.\n// Output: one n8n item per patient record, stamped with an orchestration run id.\n// ---------------------------------------------------------------------------\n\nconst file = $input.first().json;\nconst meta = file.cohort_metadata || {};\nconst records = file.records || [];\n\nif (!records.length) {\n  throw new Error('No records found. Did build_cohort.py run after the FL pipeline?');\n}\n\nconst runId = 'ORC-' + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);\n\nreturn records.map((r, i) => ({\n  json: {\n    ...r,\n    run_id: runId,\n    case_index: i + 1,\n    cohort_size: records.length,\n    dispatched_at: new Date().toISOString(),\n    // cohort-level context carried onto every patient for the audit trail\n    fl_checkpoint: meta.fl_checkpoint || r.fl_checkpoint || 'unknown',\n    fl_round: meta.fl_round ?? r.fl_round ?? null,\n    cohort_ece: meta.calibration?.expected_calibration_error ?? r.cohort_ece ?? null,\n    cohort_confidence_gap: meta.calibration?.confidence_gap ?? r.cohort_confidence_gap ?? null,\n    blind_classes: Object.entries(meta.class_reliability || {})\n      .filter(([, v]) => v.model_blind).map(([k]) => k)\n  }\n}));\n"
+      },
+      "id": "1eb58729-8bf2-48f8-b1b3-2eba6f4669d9",
+      "name": "Split Cohort Into Patients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "3231d4ce-ce00-4033-8e32-1fad791fbffd",
+      "name": "Limit (demo cap)",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/analyze-patient",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, prediction: $json.prediction, qrs_shap_signed: $json.qrs_shap_signed, rr_variance_proxy: $json.normalized_entropy, ehr_triage_note: $json.ehr_triage_note, ecg_lead: $json.ecg_lead, true_label: $json.true_class_aami, confidence: $json.confidence, correct: $json.correct ? 1 : 0, risk_flag: $json.uncertainty_level, p_wave_shap_signed: $json.p_wave_shap_signed, t_wave_shap_signed: $json.t_wave_shap_signed, qrs_importance: $json.qrs_importance, p_wave_importance: $json.p_wave_importance, t_wave_importance: $json.t_wave_importance, dominant_ecg_region: $json.dominant_ecg_region, qrs_direction: $json.qrs_direction, p_wave_direction: $json.p_wave_direction, t_wave_direction: $json.t_wave_direction, run_id: $json.run_id }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "9410b3f7-570a-426f-ae71-e9bb73ec2dc3",
+      "name": "Call Clinical Agent API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -540,
+        340
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------------------\n// NORMALISE AGENT RESPONSE + GOVERNANCE SCORING  (integrated edition)\n//\n// Governance now runs on the FEDERATED PIPELINE'S OWN measured signals rather\n// than on guessed thresholds:\n//\n//   normalized_entropy / uncertainty_level  <- Zafar, Monte Carlo Dropout\n//   qrs|p_wave|t_wave_shap_signed           <- Denis, SHAP by ECG region\n//   class_recall / class_roc_auc            <- per-class evaluation\n//   cohort_confidence_gap (ECE)             <- calibration analysis\n//\n// Threshold justification (outputs/uncertainty/uncertainty_metrics.json):\n//   accuracy at Low uncertainty     = 96.8%\n//   accuracy at High uncertainty    = 66.4%\n// A 30-point accuracy collapse is the empirical basis for escalating High.\n// ---------------------------------------------------------------------------\n\nconst URGENCY_WEIGHT = { Low: 0.0, Medium: 0.5, High: 0.85, Critical: 1.0 };\n\n// Weights sum to 1.0 -> risk_score bounded [0, 1]\nconst W = { abnormal: 0.30, entropy: 0.30, urgency: 0.25, unreliable_class: 0.15 };\n\nconst RISK_ESCALATION   = 0.45;   // composite threshold\nconst RECALL_FLOOR      = 0.50;   // predicted class must be detectable at least this well\nconst CALIBRATED_FLOOR  = 0.70;   // confidence floor AFTER correcting for ECE\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const api = item.json;\n  const src = $('Split Cohort Into Patients').item.json;\n\n  const agent = api.agent_output || {};\n  const feats = api.features || {};\n\n  const prediction  = feats.prediction || src.prediction;\n  const rawConf     = Number(src.confidence ?? 0);\n  const urgency     = agent.urgency_level || 'Unknown';\n  const parseOk     = api.status === 'success';\n\n  // The model is measurably over-confident (negative confidence gap), so the\n  // raw softmax value is corrected before it is compared against the floor.\n  const gap             = Number(src.cohort_confidence_gap ?? 0);\n  const calibratedConf  = Math.max(0, Math.min(1, rawConf + gap));\n\n  const normEntropy     = Number(src.normalized_entropy ?? 0);\n  const uncertainty     = src.uncertainty_level || 'Unknown';\n  const classRecall     = src.class_recall == null ? null : Number(src.class_recall);\n  const blindClasses    = src.blind_classes || [];\n\n  // API returns clinical_status directly (v2); fall back to deriving it.\n  const clinicalStatus = api.clinical_status\n    || (prediction !== 'Normal Sinus Rhythm' ? 'Abnormal' : 'Normal');\n  const isAbnormal = clinicalStatus === 'Abnormal';\n\n  const classUnreliability = (classRecall == null) ? 0.5 : (1 - classRecall);\n\n  // ---- composite risk score -------------------------------------------------\n  const riskScore = Number((\n      W.abnormal          * (isAbnormal ? 1 : 0)\n    + W.entropy           * normEntropy\n    + W.urgency           * (URGENCY_WEIGHT[urgency] ?? 0.5)\n    + W.unreliable_class  * classUnreliability\n  ).toFixed(4));\n\n  // ---- escalation gates -----------------------------------------------------\n  const reasons = [];\n\n  if (uncertainty === 'High')\n    reasons.push('MC-Dropout uncertainty High (accuracy in this band is 66.4% vs 96.8% at Low)');\n\n  if (isAbnormal)\n    reasons.push('Abnormal rhythm predicted (' + prediction + ')');\n\n  if (calibratedConf < CALIBRATED_FLOOR)\n    reasons.push('Calibration-corrected confidence ' + (calibratedConf * 100).toFixed(1) + '% below ' + (CALIBRATED_FLOOR * 100) + '% floor');\n\n  if (urgency === 'High' || urgency === 'Critical')\n    reasons.push('Agent assigned ' + urgency + ' urgency');\n\n  if (classRecall != null && classRecall < RECALL_FLOOR)\n    reasons.push('Predicted class ' + (src.predicted_class_aami || '?') + ' has recall ' + classRecall.toFixed(3) + ' - model unreliable on this class');\n\n  if (riskScore >= RISK_ESCALATION)\n    reasons.push('Composite risk score ' + riskScore + ' >= ' + RISK_ESCALATION);\n\n  if (!parseOk)\n    reasons.push('Agent returned status \"' + api.status + '\" - output not structurally verified');\n\n  // ---- blind-class exposure -------------------------------------------------\n  // The federated model has zero recall on some classes, so it can NEVER emit\n  // them. A high-uncertainty prediction of a class it CAN emit is therefore the\n  // observable signature of a masked minority beat. This cannot be detected by\n  // checking the predicted class alone.\n  const blindRisk = blindClasses.length > 0\n                 && uncertainty !== 'Low'\n                 && !blindClasses.includes(src.predicted_class_aami);\n  if (blindRisk)\n    reasons.push('BLIND-CLASS EXPOSURE: model cannot detect class(es) ' + blindClasses.join('/') + '; uncertain prediction may mask one');\n\n  // ---- disagreement detector -------------------------------------------------\n  const disagreement = (urgency === 'Low')\n                    && (uncertainty === 'High' || calibratedConf < CALIBRATED_FLOOR);\n  if (disagreement)\n    reasons.push('DISAGREEMENT: agent urgency Low but pipeline uncertainty high');\n\n  // ---- ground-truth check (research evaluation only, NOT a clinical gate) ----\n  const groundTruthMiss = src.correct === false;\n\n  out.push({\n    json: {\n      // -- provenance --\n      run_id: src.run_id,\n      patient_id: api.patient_id || src.patient_id,\n      case_index: src.case_index,\n      sample_index: src.sample_index,\n      fl_checkpoint: src.fl_checkpoint,\n      fl_round: src.fl_round,\n      dispatched_at: src.dispatched_at,\n      analysed_at: new Date().toISOString(),\n\n      // -- federated model evidence --\n      prediction: prediction,\n      predicted_class_aami: src.predicted_class_aami,\n      true_class_aami: src.true_class_aami,\n      correct: src.correct,\n      confidence: rawConf,\n      calibrated_confidence: Number(calibratedConf.toFixed(4)),\n      uncertainty_level: uncertainty,\n      normalized_entropy: normEntropy,\n      predictive_entropy: src.predictive_entropy,\n      mutual_information: src.mutual_information,\n      class_recall: classRecall,\n      class_roc_auc: src.class_roc_auc,\n\n      // -- SHAP evidence --\n      dominant_ecg_region: src.dominant_ecg_region,\n      qrs_shap_signed: src.qrs_shap_signed,\n      p_wave_shap_signed: src.p_wave_shap_signed,\n      t_wave_shap_signed: src.t_wave_shap_signed,\n      ehr_triage_note: src.ehr_triage_note,\n\n      // -- flattened agent output --\n      api_status: api.status,\n      urgency_level: urgency,\n      suggested_next_action: agent.suggested_next_action || 'Not provided',\n      doctor_technical_alert: agent.doctor_technical_alert || 'Not provided',\n      family_reassurance_message: agent.family_reassurance_message || 'Not provided',\n      pipeline_recommendation: src.pipeline_recommendation || 'Not provided',\n\n      // -- governance decision --\n      clinical_status: clinicalStatus,\n      risk_score: riskScore,\n      low_confidence_flag: calibratedConf < CALIBRATED_FLOOR,\n      disagreement_flag: disagreement,\n      blind_class_risk: blindRisk,\n      ground_truth_miss: groundTruthMiss,\n      human_review_required: reasons.length > 0,\n      review_reason: reasons.length ? reasons.join(' | ') : 'All governance gates passed',\n      governance_policy: 'v2.0-integrated weights{abn .30, ent .30, urg .25, cls .15} esc' + RISK_ESCALATION + ' recall_floor' + RECALL_FLOOR + ' conf_floor' + CALIBRATED_FLOOR + ' (ECE-corrected)'\n    }\n  });\n}\n\nreturn out;\n"
+      },
+      "id": "889cbc6a-e2c1-407e-a672-e03de2e39118",
+      "name": "Normalise & Govern",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------------------\n// FAIL-SAFE BRANCH\n// Reached when the FastAPI call errors, times out, or Ollama is unreachable.\n// An unreachable agent is treated as maximum uncertainty and escalated.\n// A patient is never silently dropped.\n// ---------------------------------------------------------------------------\n\nreturn $input.all().map(item => {\n  const src = $('Split Cohort Into Patients').item.json;\n  const err = item.json.error || item.json.message || 'Unknown transport error';\n\n  return {\n    json: {\n      run_id: src.run_id,\n      patient_id: src.patient_id,\n      case_index: src.case_index,\n      sample_index: src.sample_index,\n      fl_checkpoint: src.fl_checkpoint,\n      fl_round: src.fl_round,\n      analysed_at: new Date().toISOString(),\n\n      prediction: src.prediction,\n      predicted_class_aami: src.predicted_class_aami,\n      true_class_aami: src.true_class_aami,\n      correct: src.correct,\n      confidence: src.confidence,\n      uncertainty_level: src.uncertainty_level,\n      normalized_entropy: src.normalized_entropy,\n      class_recall: src.class_recall,\n\n      api_status: 'transport_error',\n      api_error_detail: String(err).slice(0, 500),\n      urgency_level: 'Unknown',\n      suggested_next_action: 'Manual clinical assessment - automated agent unavailable',\n      doctor_technical_alert: 'AGENT UNAVAILABLE. No machine analysis produced for this patient.',\n      family_reassurance_message: 'The medical team is reviewing this record directly.',\n      pipeline_recommendation: src.pipeline_recommendation || 'Not provided',\n\n      clinical_status: 'Indeterminate',\n      risk_score: 1.0,\n      low_confidence_flag: true,\n      disagreement_flag: false,\n      blind_class_risk: false,\n      ground_truth_miss: src.correct === false,\n      human_review_required: true,\n      review_reason: 'FAIL-SAFE: clinical agent unreachable - escalated by default',\n      governance_policy: 'v2.0-integrated fail-safe path'\n    }\n  };\n});\n"
+      },
+      "id": "c5eaa5a0-5104-4052-b76e-03446fa0bd4a",
+      "name": "Fail-Safe: Agent Unreachable",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "hitl-gate",
+              "leftValue": "={{ $json.human_review_required }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0ea820e8-24d4-4aba-b2ab-e9b34eb70c35",
+      "name": "Human Review Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -60,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Clinical Review Queue",
+              "type": "string"
+            },
+            {
+              "id": "alert",
+              "name": "clinician_alert",
+              "value": "=CLINICAL REVIEW REQUIRED\n\nRun: {{ $json.run_id }}   |   FL round {{ $json.fl_round }}\nPatient: {{ $json.patient_id }} (sample {{ $json.sample_index }})\n\n--- FEDERATED MODEL ---\nPrediction: {{ $json.prediction }} [{{ $json.predicted_class_aami }}]\nConfidence: {{ ($json.confidence * 100).toFixed(1) }}%  (ECE-corrected {{ ($json.calibrated_confidence * 100).toFixed(1) }}%)\nUncertainty: {{ $json.uncertainty_level }}  (normalised entropy {{ $json.normalized_entropy }})\nClass recall: {{ $json.class_recall }}\n\n--- EXPLAINABILITY ---\nDominant region: {{ $json.dominant_ecg_region }}\nQRS SHAP: {{ $json.qrs_shap_signed }} | P-wave: {{ $json.p_wave_shap_signed }} | T-wave: {{ $json.t_wave_shap_signed }}\n\n--- GOVERNANCE ---\nStatus: {{ $json.clinical_status }}\nComposite risk score: {{ $json.risk_score }}\nEscalation triggers:\n{{ $json.review_reason }}\n\n--- AGENT ---\nUrgency: {{ $json.urgency_level }}\nRecommended action: {{ $json.suggested_next_action }}\n\n{{ $json.doctor_technical_alert }}\n\nPipeline note: {{ $json.pipeline_recommendation }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "clinical_review_status",
+              "value": "Pending Clinician Sign-Off",
+              "type": "string"
+            },
+            {
+              "id": "blocked",
+              "name": "downstream_action_blocked",
+              "value": "={{ true }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "02b35215-b0cd-439b-afa4-30590d767719",
+      "name": "Prepare Clinician Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "7b5a185a-37bb-4d7e-8eaf-ce7c51f8ac64",
+      "name": "HITL Gate - Await Clinician",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        100
+      ],
+      "webhookId": "ff005873-29a5-4aa5-afad-f8541730d01c"
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "clinical_review_status",
+              "value": "Reviewed - Released by Clinician",
+              "type": "string"
+            },
+            {
+              "id": "mode",
+              "name": "review_mode",
+              "value": "SIMULATED (timed hold) - set Wait node Resume=On Webhook Call for genuine sign-off",
+              "type": "string"
+            },
+            {
+              "id": "released",
+              "name": "hitl_released_at",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "blocked",
+              "name": "downstream_action_blocked",
+              "value": "={{ false }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1e614f9d-147c-455d-a83c-565176e5549c",
+      "name": "Record Clinician Decision",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        620,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "route",
+              "name": "route",
+              "value": "Routine Monitoring",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "clinical_review_status",
+              "value": "Not required - auto-cleared",
+              "type": "string"
+            },
+            {
+              "id": "log",
+              "name": "routine_log_message",
+              "value": "=ROUTINE ECG LOG\n\nRun: {{ $json.run_id }} | Patient: {{ $json.patient_id }}\nPrediction: {{ $json.prediction }} @ {{ ($json.confidence * 100).toFixed(1) }}%\nUncertainty: {{ $json.uncertainty_level }} | Risk score: {{ $json.risk_score }}\nGate result: {{ $json.review_reason }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "836d3602-876d-4e19-b4b1-830daa210b62",
+      "name": "Routine Monitoring Log",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------------------------\n// BUILD AUDIT RECORD\n// Convergence point for all branches. One tamper-evident record per patient,\n// chained to the federated checkpoint and round that produced the prediction.\n// Checksum is pure-JS FNV-1a (n8n's Code sandbox blocks node builtins).\n// ---------------------------------------------------------------------------\n\nfunction fnv1a(str) {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < str.length; i++) {\n    h ^= str.charCodeAt(i);\n    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;\n  }\n  return ('00000000' + h.toString(16)).slice(-8);\n}\n\nreturn $input.all().map(item => {\n  const d = item.json;\n\n  const record = {\n    audit_version: '2.0-integrated',\n    run_id:     d.run_id     || 'unknown',\n    patient_id: d.patient_id || 'unknown',\n    logged_at:  new Date().toISOString(),\n\n    // provenance back into the federated pipeline\n    fl_checkpoint: d.fl_checkpoint || 'unknown',\n    fl_round:      d.fl_round ?? null,\n    sample_index:  d.sample_index ?? null,\n\n    // what the federated model said\n    prediction:            d.prediction || 'unknown',\n    predicted_class_aami:  d.predicted_class_aami || 'unknown',\n    true_class_aami:       d.true_class_aami || 'unknown',\n    confidence:            d.confidence ?? null,\n    calibrated_confidence: d.calibrated_confidence ?? null,\n    uncertainty_level:     d.uncertainty_level || 'unknown',\n    normalized_entropy:    d.normalized_entropy ?? null,\n    class_recall:          d.class_recall ?? null,\n\n    // explainability evidence\n    dominant_ecg_region: d.dominant_ecg_region || 'unknown',\n    qrs_shap_signed:     d.qrs_shap_signed ?? null,\n\n    // what the agent said\n    api_status:            d.api_status || 'unknown',\n    urgency_level:         d.urgency_level || 'unknown',\n    suggested_next_action: d.suggested_next_action || 'unknown',\n\n    // what the orchestrator decided, and why\n    clinical_status:       d.clinical_status || 'unknown',\n    risk_score:            d.risk_score ?? null,\n    human_review_required: d.human_review_required ?? false,\n    review_reason:         d.review_reason || 'not recorded',\n    governance_policy:     d.governance_policy || 'not recorded',\n    route:                 d.route || 'unknown',\n\n    // what the human did\n    clinical_review_status: d.clinical_review_status || 'Not required',\n    review_mode:            d.review_mode || 'n/a',\n    hitl_released_at:       d.hitl_released_at || null,\n\n    // research flags for the results chapter\n    low_confidence_flag: d.low_confidence_flag ?? false,\n    disagreement_flag:   d.disagreement_flag ?? false,\n    blind_class_risk:    d.blind_class_risk ?? false,\n    ground_truth_miss:   d.ground_truth_miss ?? false\n  };\n\n  record.integrity_checksum = fnv1a(JSON.stringify(record));\n  record.audit_status = 'Completed';\n\n  return { json: record };\n});\n"
+      },
+      "id": "4de0ac8f-fd7e-4375-b12b-934fb3bf8e3e",
+      "name": "Build Audit Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "mode": "all",
+        "options": {
+          "fileName": "ecg_audit_log.json",
+          "format": true
+        }
+      },
+      "id": "a2bc53f3-7610-40f9-85b4-611dcfc3afde",
+      "name": "Convert Audit to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/shared/ecg_audit_log.json",
+        "options": {}
+      },
+      "id": "d4b1e4dd-c894-4ff1-bd4d-2b123be3f6f3",
+      "name": "Write Audit File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## INTEGRATION POINT\n\nThis node reads the output of `build_cohort.py`, which joins:\n\n- **Zafar** - `outputs/uncertainty/uncertainty_predictions.csv` (MC-Dropout entropy, uncertainty_level)\n- **Denis** - `outputs/explainability/shap/prediction_explanations.csv` (SHAP by ECG region)\n- `outputs/calibration/calibration_metrics.json` (ECE)\n- `outputs/evaluation/per_class_metrics.csv` (per-class recall)\n\nJoin key: `global_test_index == sample_index` (250/250 matched).\n\n**Update the file path below to match your machine.**\nDocker: mount the repo and use the container path.",
+        "height": 460,
+        "width": 460,
+        "color": 4
+      },
+      "id": "c692c9f2-e313-4485-9fd8-359893d55ef0",
+      "name": "Sticky 98e9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Governance runs on THEIR measured signals\n\nNo guessed thresholds. Every gate traces to a pipeline artefact:\n\n| Gate | Source |\n|---|---|\n| uncertainty High | MC-Dropout |\n| ECE-corrected confidence | calibration |\n| class recall < 0.5 | per-class eval |\n| SHAP region | Denis |\n\n**Why escalate on High uncertainty:** their own metrics show accuracy 96.8% at Low vs **66.4% at High**. That 30-point collapse is the justification.",
+        "height": 400,
+        "width": 420,
+        "color": 5
+      },
+      "id": "ddd93a91-080d-422a-875e-4ea5ede40d75",
+      "name": "Sticky 3885",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1060,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## BLIND-CLASS EXPOSURE\n\nPer-class evaluation shows the federated model has **recall 0.0 on class S and class F**. It can never emit them.\n\nSo you cannot gate on predicted class - the model never predicts them. The gate fires instead on **uncertain predictions of classes it CAN emit**, which is the observable signature of a masked minority beat.\n\nIn the 250-record cohort: 50 true S and 17 true F beats are unreachable.\n\n**Raise this with your supervisor before the demo.**",
+        "height": 380,
+        "width": 420,
+        "color": 3
+      },
+      "id": "5bdc4dd9-f251-432c-ad47-c073f4209e70",
+      "name": "Sticky 4cf9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## HITL gate - read before writing up\n\nThe Wait node holds for **5 seconds**. That is a simulated pause so the workflow runs unattended.\n\nDo **not** call this human-in-the-loop in the dissertation while it is in this mode.\n\nTo make it real: Wait node -> **Resume: On Webhook Call**. Execution then blocks until a clinician calls the resume URL.",
+        "height": 340,
+        "width": 400,
+        "color": 6
+      },
+      "id": "39b23b2e-e145-4f50-a940-af4d0940929b",
+      "name": "Sticky 8064",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Demo cap\n\n250 records x local 8B model = hours.\n\nThis Limit node caps the run at **10 patients**. Raise or delete it for the full cohort run that produces your results table.",
+        "height": 240,
+        "width": 300,
+        "color": 7
+      },
+      "id": "4a57a166-fcc7-483a-835b-fad45debf984",
+      "name": "Sticky a154",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -820,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read FL Cohort File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read FL Cohort File": {
+      "main": [
+        [
+          {
+            "node": "Parse Cohort JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Cohort JSON": {
+      "main": [
+        [
+          {
+            "node": "Split Cohort Into Patients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Cohort Into Patients": {
+      "main": [
+        [
+          {
+            "node": "Limit (demo cap)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit (demo cap)": {
+      "main": [
+        [
+          {
+            "node": "Call Clinical Agent API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Clinical Agent API": {
+      "main": [
+        [
+          {
+            "node": "Normalise & Govern",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail-Safe: Agent Unreachable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise & Govern": {
+      "main": [
+        [
+          {
+            "node": "Human Review Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail-Safe: Agent Unreachable": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Review Required?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Clinician Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Routine Monitoring Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Clinician Alert": {
+      "main": [
+        [
+          {
+            "node": "HITL Gate - Await Clinician",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HITL Gate - Await Clinician": {
+      "main": [
+        [
+          {
+            "node": "Record Clinician Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Clinician Decision": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routine Monitoring Log": {
+      "main": [
+        [
+          {
+            "node": "Build Audit Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Audit Record": {
+      "main": [
+        [
+          {
+            "node": "Convert Audit to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Audit to File": {
+      "main": [
+        [
+          {
+            "node": "Write Audit File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

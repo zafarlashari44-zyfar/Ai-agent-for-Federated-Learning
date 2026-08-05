@@ -42,3 +42,5 @@ Thumbs.db
 global_evaluator_dump.txt
 server_app_dump.txt
 training_dump.txt
+
+outputs/orchestration/
