@@ -20,7 +20,12 @@ from reasoning_pipeline.application.services.explainability_service import (
 from reasoning_pipeline.baseline_adapter.classifier import (
     BaselineClassifier,
 )
-from reasoning_pipeline.domain.enums.statuses import AnalysisScope, OODStatus
+from reasoning_pipeline.domain.enums.statuses import (
+    AnalysisScope,
+    OODStatus,
+    SignalSuitabilityStatus,
+    SourceDataset,
+)
 from reasoning_pipeline.domain.models.beat_analysis_result import (
     BeatAnalysisResult,
 )
@@ -150,6 +155,7 @@ class ECGAnalysisPipeline:
         feature_extractor: FeatureExtractionServiceProtocol,
         model_input_preparer: ModelInputPreparerProtocol,
         classifier: ClassifierProtocol,
+        classifier_is_mit_bih_aami: bool,
         evidence_builder: EvidenceBuilderProtocol,
         reasoning_engine: ReasoningEngineProtocol,
         report_generator: ReportGeneratorProtocol,
@@ -164,6 +170,7 @@ class ECGAnalysisPipeline:
         self.feature_extractor = feature_extractor
         self.model_input_preparer = model_input_preparer
         self.classifier = classifier
+        self.classifier_is_mit_bih_aami = classifier_is_mit_bih_aami
         self.evidence_builder = evidence_builder
         self.reasoning_engine = reasoning_engine
         self.report_generator = report_generator
@@ -284,8 +291,12 @@ class ECGAnalysisPipeline:
         analysis_scope = self._analysis_scope(signal, suitability_assessment)
         external = analysis_scope is AnalysisScope.EXPLORATORY_EXTERNAL_SOURCE
         model_scope_statement = (
-            "Predictions are limited to the MIT-BIH AAMI classes "
-            "N, S, V, F and Q."
+            "This recording was identified as MIT-BIH Arrhythmia Database "
+            "data and processed within the validated AAMI classifier scope."
+            if not external
+            else "This recording is outside the validated MIT-BIH training "
+            "source. Predictions are exploratory and limited to AAMI "
+            "classes N, S, V, F and Q."
         )
         recommended_interpretation = (
             "This external recording is outside the model's validated "
@@ -328,16 +339,28 @@ class ECGAnalysisPipeline:
             analysis_warnings=tuple(dict.fromkeys(analysis_warnings)),
         )
 
-    @staticmethod
     def _analysis_scope(
+        self,
         signal: ECGSignal,
         suitability: SignalSuitabilityAssessment | None,
     ) -> AnalysisScope:
         if suitability is not None and not suitability.suitable_for_processing:
             return AnalysisScope.UNSUPPORTED
-        mit_bih_compatible = "mit-bih" in signal.source.casefold() or (
-            signal.source_format == "npy"
-            and signal.lead_name in {None, "MLII", "II", "Lead II"}
+        mit_bih_compatible = (
+            signal.source_dataset is SourceDataset.MIT_BIH_ARRHYTHMIA
+            and suitability is not None
+            and suitability.status
+            in {
+                SignalSuitabilityStatus.ACCEPTED,
+                SignalSuitabilityStatus.ACCEPTED_WITH_WARNINGS,
+            }
+            and signal.lead_name in {"MLII", "II"}
+            and np.isclose(
+                signal.sampling_rate_hz,
+                ModelInputPreparer.EXPECTED_SAMPLING_RATE_HZ,
+            )
+            and signal.units == "mV"
+            and self.classifier_is_mit_bih_aami
         )
         if mit_bih_compatible:
             return AnalysisScope.VALIDATED_MIT_BIH_COMPATIBLE
@@ -387,6 +410,7 @@ def create_default_pipeline(
         feature_extractor=feature_extractor,
         model_input_preparer=ModelInputPreparer(),
         classifier=classifier,
+        classifier_is_mit_bih_aami=True,
         evidence_builder=EvidenceBuilder(),
         reasoning_engine=ReasoningEngine(),
         report_generator=ReportGenerator(),

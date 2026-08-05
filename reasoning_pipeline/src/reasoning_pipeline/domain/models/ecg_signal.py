@@ -1,5 +1,7 @@
 ﻿from dataclasses import dataclass
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
+
 
 @dataclass(frozen=True)
 class ECGSignal:
@@ -27,6 +29,7 @@ class ECGSignal:
     harmonised_duration_seconds: float | None = None
     harmonisation_transformations: tuple[str, ...] = ()
     harmonisation_warnings: tuple[str, ...] = ()
+    source_dataset: SourceDataset | None = None
 
     def __post_init__(self) -> None:
         if not self.record_id.strip():

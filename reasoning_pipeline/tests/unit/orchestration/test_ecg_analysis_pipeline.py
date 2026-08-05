@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+import pytest
 
 from reasoning_pipeline.api.schemas.analyse import AnalysisResponse
 from reasoning_pipeline.domain.enums.statuses import (
     AnalysisScope,
     ConsistencyStatus,
     SignalQualityStatus,
+    SignalSuitabilityStatus,
+    SourceDataset,
 )
 from reasoning_pipeline.domain.models.clinical_report import (
     ClinicalReport,
@@ -34,6 +38,9 @@ from reasoning_pipeline.domain.models.rhythm_features import (
 )
 from reasoning_pipeline.domain.models.signal_quality import (
     SignalQuality,
+)
+from reasoning_pipeline.domain.models.signal_suitability_assessment import (
+    SignalSuitabilityAssessment,
 )
 from reasoning_pipeline.orchestration.ecg_analysis_pipeline import (
     ECGAnalysisPipeline,
@@ -268,6 +275,7 @@ def test_pipeline_returns_complete_analysis_result() -> None:
         feature_extractor=FeatureExtractorStub(features),
         model_input_preparer=InputPreparerStub(prepared_beats),
         classifier=ClassifierStub((prediction, prediction)),
+        classifier_is_mit_bih_aami=True,
         evidence_builder=EvidenceBuilderStub(),
         reasoning_engine=ReasoningEngineStub(),
         report_generator=ReportGeneratorStub(),
@@ -323,3 +331,58 @@ def test_pipeline_returns_complete_analysis_result() -> None:
         "narrative",
     }
     assert legacy_client_fields <= api_payload.keys()
+
+
+def _accepted_suitability() -> SignalSuitabilityAssessment:
+    return SignalSuitabilityAssessment(
+        status=SignalSuitabilityStatus.ACCEPTED,
+        suitable_for_processing=True,
+        quality_score=1.0,
+        duration_seconds=10.0,
+        sampling_rate_hz=360.0,
+        selected_lead="MLII",
+        units="mV",
+        detected_r_peak_count=10,
+        estimated_heart_rate_bpm=60.0,
+        finite_sample_ratio=1.0,
+        flatline_percentage=0.0,
+        clipping_percentage=0.0,
+        noise_score=0.0,
+    )
+
+
+def _scope_pipeline() -> ECGAnalysisPipeline:
+    pipeline = object.__new__(ECGAnalysisPipeline)
+    pipeline.classifier_is_mit_bih_aami = True
+    return pipeline
+
+
+def test_explicit_mit_bih_provenance_receives_validated_scope() -> None:
+    signal = replace(
+        _signal(),
+        source_dataset=SourceDataset.MIT_BIH_ARRHYTHMIA,
+        source_format="wfdb",
+        source="api-upload",
+        lead_name="MLII",
+        units="mV",
+    )
+    scope = _scope_pipeline()._analysis_scope(signal, _accepted_suitability())
+    assert scope is AnalysisScope.VALIDATED_MIT_BIH_COMPATIBLE
+
+
+@pytest.mark.parametrize(
+    "source_dataset",
+    [SourceDataset.PTB_XL, SourceDataset.PRIVATE, SourceDataset.UNKNOWN, None],
+)
+def test_external_or_missing_provenance_remains_exploratory(
+    source_dataset: SourceDataset | None,
+) -> None:
+    signal = replace(
+        _signal(),
+        source_dataset=source_dataset,
+        source_format="wfdb",
+        lead_name="MLII",
+        units="mV",
+    )
+    scope = _scope_pipeline()._analysis_scope(signal, _accepted_suitability())
+    assert scope is AnalysisScope.EXPLORATORY_EXTERNAL_SOURCE

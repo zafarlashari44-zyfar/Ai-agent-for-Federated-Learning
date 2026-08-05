@@ -7,7 +7,10 @@ import pytest
 from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
 )
-from reasoning_pipeline.domain.enums.statuses import SignalSuitabilityStatus
+from reasoning_pipeline.domain.enums.statuses import (
+    SignalSuitabilityStatus,
+    SourceDataset,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.domain.models.signal_suitability_assessment import (
     SignalSuitabilityAssessment,
@@ -50,6 +53,7 @@ def make_signal(
         original_sample_count=count,
         original_duration_seconds=seconds,
         warnings=("source warning",),
+        source_dataset=SourceDataset.PRIVATE,
     )
 
 
@@ -155,6 +159,7 @@ def test_duration_and_source_metadata_are_preserved() -> None:
     assert result.lead_names == source.lead_names
     assert result.lead_name == source.lead_name
     assert result.warnings == source.warnings
+    assert result.source_dataset is SourceDataset.PRIVATE
 
 
 class Adapter:

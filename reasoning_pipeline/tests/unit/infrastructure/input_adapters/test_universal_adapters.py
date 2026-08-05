@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import wfdb
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.exceptions.pipeline_errors import (
     InvalidSignalError,
 )
@@ -95,11 +96,13 @@ def test_wfdb_pair_loading_and_lead_priority(tmp_path: Path) -> None:
     signal = WfdbECGInputAdapter().load(
         file_path=header,
         companion_file_path=header.with_suffix(".dat"),
+        source_dataset=SourceDataset.MIT_BIH_ARRHYTHMIA,
     )
     assert signal.lead_name == "II"
     assert signal.lead_names == ("I", "II", "MLII")
     assert signal.units == "mV"
     assert signal.original_sampling_rate_hz == 100.0
+    assert signal.source_dataset is SourceDataset.MIT_BIH_ARRHYTHMIA
 
 
 def test_wfdb_explicit_lead_selection(tmp_path: Path) -> None:
@@ -110,6 +113,23 @@ def test_wfdb_explicit_lead_selection(tmp_path: Path) -> None:
         lead_name="MLII",
     )
     assert signal.lead_name == "MLII"
+
+
+@pytest.mark.parametrize(
+    "source_dataset",
+    [SourceDataset.PTB_XL, SourceDataset.PRIVATE, SourceDataset.UNKNOWN, None],
+)
+def test_wfdb_preserves_external_or_missing_provenance(
+    tmp_path: Path,
+    source_dataset: SourceDataset | None,
+) -> None:
+    header = write_wfdb(tmp_path)
+    signal = WfdbECGInputAdapter().load(
+        file_path=header,
+        companion_file_path=header.with_suffix(".dat"),
+        source_dataset=source_dataset,
+    )
+    assert signal.source_dataset is source_dataset
 
 
 def test_wfdb_falls_back_to_first_lead_with_warning(tmp_path: Path) -> None:

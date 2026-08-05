@@ -21,6 +21,7 @@ from reasoning_pipeline.api.schemas.analyse import (
 from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
 )
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 
 router = APIRouter(tags=["analysis"])
 
@@ -66,6 +67,15 @@ async def analyse_ecg(
     lead_name: Annotated[str | None, Form()] = None,
     signal_column: Annotated[str | None, Form()] = None,
     units: Annotated[str | None, Form()] = None,
+    source_dataset: Annotated[
+        SourceDataset | None,
+        Form(
+            description=(
+                "Explicit dataset provenance. Missing provenance remains "
+                "exploratory."
+            )
+        ),
+    ] = None,
     wfdb_file: Annotated[
         UploadFile | None,
         File(description="Companion .hea or .dat file for WFDB records."),
@@ -154,6 +164,7 @@ async def analyse_ecg(
                 lead_name=lead_name.strip() if lead_name else None,
                 signal_column=signal_column.strip() if signal_column else None,
                 units=units.strip() if units else None,
+                source_dataset=source_dataset,
             )
 
         return AnalysisResponse.from_domain(

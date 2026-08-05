@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 
 
@@ -33,5 +34,6 @@ class ECGInputAdapterProtocol(Protocol):
         signal_column: str | None = None,
         units: str | None = None,
         companion_file_path: str | Path | None = None,
+        source_dataset: SourceDataset | None = None,
     ) -> ECGSignal:
         ...

@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.scribe_v2.validator import ECGSignalValidator
 
@@ -28,6 +29,7 @@ def build_signal(
     units: str | None = None,
     warnings: tuple[str, ...] = (),
     validator: ECGSignalValidator | None = None,
+    source_dataset: SourceDataset | None = None,
 ) -> ECGSignal:
     validated = (validator or ECGSignalValidator()).validate(values, sampling_rate_hz)
     count = int(validated.size)
@@ -44,4 +46,5 @@ def build_signal(
         original_sample_count=count,
         original_duration_seconds=count / float(sampling_rate_hz),
         warnings=warnings,
+        source_dataset=source_dataset,
     )

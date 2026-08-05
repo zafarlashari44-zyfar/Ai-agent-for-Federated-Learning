@@ -7,7 +7,10 @@ from reasoning_pipeline.application.services.pipeline_service import (
     PipelineService,
     UnsupportedECGFormatError,
 )
-from reasoning_pipeline.domain.enums.statuses import SignalSuitabilityStatus
+from reasoning_pipeline.domain.enums.statuses import (
+    SignalSuitabilityStatus,
+    SourceDataset,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.domain.models.signal_suitability_assessment import (
     SignalSuitabilityAssessment,
@@ -47,8 +50,17 @@ class StubAdapter:
         signal_column: str | None = None,
         units: str | None = None,
         companion_file_path: str | Path | None = None,
+        source_dataset: SourceDataset | None = None,
     ) -> ECGSignal:
-        del record_id, source, lead_name, signal_column, units, companion_file_path
+        del (
+            record_id,
+            source,
+            lead_name,
+            signal_column,
+            units,
+            companion_file_path,
+            source_dataset,
+        )
         self.received_file_path = file_path
         self.received_sampling_rate_hz = sampling_rate_hz
         return self.signal

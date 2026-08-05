@@ -18,6 +18,8 @@ dependencies = [
     "scipy>=1.13",
     "torch>=2.2.2,<2.3",
     "wfdb>=4.1,<5.0",
+    "scikit-learn>=1.5,<2.0",
+    "matplotlib>=3.8,<4.0",
 ]
 
 [project.optional-dependencies]
@@ -37,8 +39,8 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["tests", "research/detailed_arrhythmia/tests"]
+pythonpath = ["src", "."]
 addopts = [
     "-ra",
     "--strict-markers",
@@ -65,7 +67,15 @@ packages = ["reasoning_pipeline"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["neurokit2", "pandas", "wfdb"]
+module = [
+    "matplotlib",
+    "matplotlib.*",
+    "neurokit2",
+    "pandas",
+    "sklearn",
+    "sklearn.*",
+    "wfdb",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -26,6 +26,13 @@ class AnalysisScope(StrEnum):
     UNSUPPORTED = "unsupported"
 
 
+class SourceDataset(StrEnum):
+    MIT_BIH_ARRHYTHMIA = "mit_bih_arrhythmia"
+    PTB_XL = "ptb_xl"
+    PRIVATE = "private"
+    UNKNOWN = "unknown"
+
+
 class EvidenceDirection(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"

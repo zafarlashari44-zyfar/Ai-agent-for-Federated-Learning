@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import wfdb
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.infrastructure.input_adapters.common import build_signal
 
@@ -26,6 +27,7 @@ class WfdbECGInputAdapter:
         signal_column: str | None = None,
         units: str | None = None,
         companion_file_path: str | Path | None = None,
+        source_dataset: SourceDataset | None = None,
     ) -> ECGSignal:
         del sampling_rate_hz, signal_column, units
         first = Path(file_path)
@@ -79,4 +81,5 @@ class WfdbECGInputAdapter:
             lead_names=lead_names,
             units=record_units[index] if record_units else None,
             warnings=warning,
+            source_dataset=source_dataset,
         )

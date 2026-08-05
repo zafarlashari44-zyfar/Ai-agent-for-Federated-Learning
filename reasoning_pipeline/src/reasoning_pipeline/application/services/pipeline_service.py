@@ -13,6 +13,7 @@ from reasoning_pipeline.application.ports.signal_harmoniser import (
 from reasoning_pipeline.application.ports.signal_suitability_assessor import (
     SignalSuitabilityAssessorProtocol,
 )
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.exceptions.pipeline_errors import (
     SignalSuitabilityRejectedError,
 )
@@ -91,6 +92,7 @@ class PipelineService:
         signal_column: str | None = None,
         units: str | None = None,
         companion_file_path: str | Path | None = None,
+        source_dataset: SourceDataset | None = None,
     ) -> ECGAnalysisResult:
         """
         Load and analyse one complete ECG recording.
@@ -110,6 +112,7 @@ class PipelineService:
             signal_column=signal_column,
             units=units,
             companion_file_path=companion_file_path,
+            source_dataset=source_dataset,
         )
 
         harmonised_signal = self._signal_harmoniser.harmonise(signal)

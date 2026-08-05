@@ -8,6 +8,7 @@ from reasoning_pipeline.domain.enums.statuses import (
     EvidenceDirection,
     OODStatus,
     SignalSuitabilityStatus,
+    SourceDataset,
 )
 from reasoning_pipeline.domain.models.attribution_map import AttributionMap
 from reasoning_pipeline.domain.models.attribution_point import AttributionPoint
@@ -41,6 +42,7 @@ class SourceSignalMetadataResponse(BaseModel):
 
     record_id: str
     source_format: str | None
+    source_dataset: SourceDataset | None
     original_sampling_rate_hz: float | None
     original_units: str | None
     original_sample_count: int | None
@@ -76,6 +78,7 @@ class SignalResponse(BaseModel):
     source: str
     lead_name: str | None
     source_format: str | None
+    source_dataset: SourceDataset | None
     original_sampling_rate_hz: float | None
     lead_names: tuple[str, ...]
     units: str | None
@@ -95,6 +98,7 @@ class SignalResponse(BaseModel):
             source=signal.source,
             lead_name=signal.lead_name,
             source_format=signal.source_format,
+            source_dataset=signal.source_dataset,
             original_sampling_rate_hz=signal.original_sampling_rate_hz,
             lead_names=signal.lead_names,
             units=signal.units,
@@ -104,6 +108,7 @@ class SignalResponse(BaseModel):
             source_metadata=SourceSignalMetadataResponse(
                 record_id=signal.record_id,
                 source_format=signal.source_format,
+                source_dataset=signal.source_dataset,
                 original_sampling_rate_hz=signal.original_sampling_rate_hz,
                 original_units=signal.original_units,
                 original_sample_count=signal.original_sample_count,

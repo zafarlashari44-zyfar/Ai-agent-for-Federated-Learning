@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.scribe_v2.service import ScribeV2InputService
 
@@ -42,6 +43,7 @@ class NpyECGInputAdapter:
         signal_column: str | None = None,
         units: str | None = None,
         companion_file_path: str | Path | None = None,
+        source_dataset: SourceDataset | None = None,
     ) -> ECGSignal:
         del signal_column, companion_file_path
         path = Path(file_path).expanduser()
@@ -82,4 +84,5 @@ class NpyECGInputAdapter:
             units=units.strip() if units else None,
             original_sample_count=signal.sample_count,
             original_duration_seconds=signal.duration_seconds,
+            source_dataset=source_dataset,
         )

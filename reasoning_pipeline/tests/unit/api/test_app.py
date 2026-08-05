@@ -8,6 +8,7 @@ from reasoning_pipeline.api.app import (
 )
 from reasoning_pipeline.api.dependencies import get_pipeline_service
 from reasoning_pipeline.api.schemas.analyse import SignalResponse
+from reasoning_pipeline.domain.enums.statuses import SourceDataset
 from reasoning_pipeline.domain.exceptions.pipeline_errors import (
     SignalSuitabilityRejectedError,
 )
@@ -59,6 +60,7 @@ def test_analyse_contract_documents_frontend_xai_controls() -> None:
         "lead_name",
         "units",
         "wfdb_file",
+        "source_dataset",
         "include_explanations",
         "include_overlay",
         "overlay_start_sample",
@@ -91,6 +93,7 @@ def test_signal_response_serializes_source_and_harmonised_metadata() -> None:
         source="api-upload",
         lead_name="II",
         source_format="wfdb",
+        source_dataset=SourceDataset.PTB_XL,
         original_sampling_rate_hz=100.0,
         lead_names=("I", "II"),
         units="mV",
@@ -111,6 +114,8 @@ def test_signal_response_serializes_source_and_harmonised_metadata() -> None:
     payload = SignalResponse.from_domain(signal).model_dump()
     assert payload["source_metadata"]["original_sampling_rate_hz"] == 100.0
     assert payload["source_metadata"]["original_units"] == "uV"
+    assert payload["source_metadata"]["source_dataset"] == "ptb_xl"
+    assert payload["source_dataset"] == "ptb_xl"
     assert payload["harmonisation_metadata"]["target_sampling_rate_hz"] == 360.0
     assert payload["harmonisation_metadata"]["resampled"] is True
 
@@ -118,7 +123,11 @@ def test_signal_response_serializes_source_and_harmonised_metadata() -> None:
 class RejectingService:
     supported_suffixes = (".npy",)
 
+    def __init__(self) -> None:
+        self.received: dict[str, object] = {}
+
     def analyse_file(self, **kwargs: object) -> None:
+        self.received = kwargs
         raise SignalSuitabilityRejectedError(
             ("No technically detectable R peaks were found.",)
         )
@@ -141,3 +150,35 @@ def test_unsuitable_upload_returns_structured_http_422() -> None:
             "No technically detectable R peaks were found."
         ],
     }
+
+
+def test_invalid_source_dataset_returns_http_422() -> None:
+    application = create_app()
+    application.dependency_overrides[get_pipeline_service] = RejectingService
+    with TestClient(application) as client:
+        response = client.post(
+            "/api/v1/analyse",
+            files={"file": ("record.npy", b"not-used")},
+            data={
+                "sampling_rate_hz": "360",
+                "source_dataset": "made_up_dataset",
+            },
+        )
+    assert response.status_code == 422
+
+
+def test_source_dataset_form_value_is_passed_as_validated_provenance() -> None:
+    application = create_app()
+    service = RejectingService()
+    application.dependency_overrides[get_pipeline_service] = lambda: service
+    with TestClient(application) as client:
+        response = client.post(
+            "/api/v1/analyse",
+            files={"file": ("119.npy", b"not-used")},
+            data={
+                "sampling_rate_hz": "360",
+                "source_dataset": "mit_bih_arrhythmia",
+            },
+        )
+    assert response.status_code == 422
+    assert service.received["source_dataset"] is SourceDataset.MIT_BIH_ARRHYTHMIA

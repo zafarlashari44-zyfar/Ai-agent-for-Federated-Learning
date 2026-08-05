@@ -122,6 +122,7 @@ class ScipySignalHarmoniser:
             harmonised_duration_seconds=harmonised_duration,
             harmonisation_transformations=tuple(transformations),
             harmonisation_warnings=unit_warnings,
+            source_dataset=signal.source_dataset,
         )
 
     def _unit_conversion(

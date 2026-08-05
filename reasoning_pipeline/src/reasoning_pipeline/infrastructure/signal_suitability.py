@@ -4,7 +4,10 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.signal import find_peaks
 
-from reasoning_pipeline.domain.enums.statuses import SignalSuitabilityStatus
+from reasoning_pipeline.domain.enums.statuses import (
+    SignalSuitabilityStatus,
+    SourceDataset,
+)
 from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.domain.models.signal_suitability_assessment import (
     SignalSuitabilityAssessment,
@@ -113,7 +116,7 @@ class HeuristicSignalSuitabilityAssessor:
 
         if signal.resampled:
             warnings.append("Signal was resampled to the model sampling rate.")
-        if signal.source_format != "npy" or "mit-bih" not in signal.source.casefold():
+        if signal.source_dataset is not SourceDataset.MIT_BIH_ARRHYTHMIA:
             warnings.append("Source is outside the validated MIT-BIH dataset.")
         if signal.lead_name not in {"MLII", "II", "Lead II"}:
             warnings.append("Selected lead is not MLII or Lead II.")
