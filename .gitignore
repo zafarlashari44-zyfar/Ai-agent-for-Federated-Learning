@@ -18,7 +18,7 @@ data/
 
 # Generated models and experiment outputs
 fl_ecg_orchestrator/outputs/
-models/
+artifacts/models/
 reports/
 results/
 
