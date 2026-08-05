@@ -1,11 +1,15 @@
-﻿import type {
-  ECGAnalysisApiResponse,
+﻿import { adaptECGAnalysisResponse } from "@/adapters/analysis-adapter";
+
+import type {
+  ECGAnalysisResult,
   ECGUploadRequestMetadata,
 } from "@/types/ecg-analysis";
 
 export interface ECGUploadPayload {
   files: File[];
   metadata?: ECGUploadRequestMetadata;
+  includeExplanations?: boolean;
+  includeOverlay?: boolean;
 }
 
 export class ECGApiError extends Error {
@@ -35,29 +39,12 @@ function appendMetadata(
 ) {
   if (!metadata) return;
 
-  if (metadata.patientExternalId) {
-    formData.append(
-      "patient_external_id",
-      metadata.patientExternalId,
-    );
-  }
-
-  if (metadata.datasetName) {
-    formData.append(
-      "dataset_name",
-      metadata.datasetName,
-    );
-  }
-
   if (metadata.recordId) {
     formData.append("record_id", metadata.recordId);
   }
 
   if (metadata.selectedLead) {
-    formData.append(
-      "lead_name",
-      metadata.selectedLead,
-    );
+    formData.append("lead_name", metadata.selectedLead);
   }
 
   if (
@@ -71,10 +58,42 @@ function appendMetadata(
   }
 }
 
+function readErrorMessage(body: unknown) {
+  if (
+    typeof body === "object" &&
+    body !== null
+  ) {
+    const record = body as Record<string, unknown>;
+
+    if (
+      typeof record.detail === "string"
+    ) {
+      return record.detail;
+    }
+
+    if (
+      typeof record.error === "object" &&
+      record.error !== null
+    ) {
+      const error = record.error as Record<string, unknown>;
+
+      if (typeof error.message === "string") {
+        return error.message;
+      }
+    }
+
+    if (typeof record.error === "string") {
+      return record.error;
+    }
+  }
+
+  return "The ECG analysis request failed.";
+}
+
 export async function analyseECG(
   payload: ECGUploadPayload,
   signal?: AbortSignal,
-): Promise<unknown> {
+): Promise<ECGAnalysisResult> {
   if (payload.files.length === 0) {
     throw new ECGApiError(
       "At least one ECG file is required.",
@@ -87,11 +106,33 @@ export async function analyseECG(
 
   const formData = new FormData();
 
-  for (const file of payload.files) {
-    formData.append("files", file);
+  formData.append("file", payload.files[0]);
+
+  if (payload.files.length > 1) {
+    formData.append("wfdb_file", payload.files[1]);
   }
 
   appendMetadata(formData, payload.metadata);
+
+  formData.append(
+    "include_explanations",
+    String(payload.includeExplanations ?? true),
+  );
+
+  formData.append(
+    "include_overlay",
+    String(payload.includeOverlay ?? true),
+  );
+
+  formData.append(
+    "waveform_downsample_limit",
+    "20000",
+  );
+
+  formData.append(
+    "overlay_downsample_limit",
+    "20000",
+  );
 
   const response = await fetch("/api/ecg/analyse", {
     method: "POST",
@@ -115,21 +156,15 @@ export async function analyseECG(
   }
 
   if (!response.ok) {
-    const apiResponse =
-      body as Partial<ECGAnalysisApiResponse>;
-
     throw new ECGApiError(
-      apiResponse.error?.message ??
-        "The ECG analysis request failed.",
+      readErrorMessage(body),
       {
         status: response.status,
-        code:
-          apiResponse.error?.error ??
-          "analysis_request_failed",
-        details: apiResponse.error?.details,
+        code: "analysis_request_failed",
+        details: body,
       },
     );
   }
 
-  return body;
+  return adaptECGAnalysisResponse(body);
 }
