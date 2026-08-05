@@ -2,3 +2,11 @@
 # Local test and R artefacts
 .coverage
 .Rhistory
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Detailed arrhythmia generated model files
+research/detailed_arrhythmia/outputs/**/*.pt
+research/detailed_arrhythmia/outputs/**/*.npz
