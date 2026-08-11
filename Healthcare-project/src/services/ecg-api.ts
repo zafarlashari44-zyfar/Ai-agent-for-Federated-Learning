@@ -1,4 +1,4 @@
-﻿import { adaptECGAnalysisResponse } from "@/adapters/analysis-adapter";
+import { adaptECGAnalysisResponse } from "@/adapters/analysis-adapter";
 
 import type {
   ECGAnalysisResult,
@@ -37,7 +37,9 @@ function appendMetadata(
   formData: FormData,
   metadata?: ECGUploadRequestMetadata,
 ) {
-  if (!metadata) return;
+  if (!metadata) {
+    return;
+  }
 
   if (metadata.recordId) {
     formData.append("record_id", metadata.recordId);
@@ -65,9 +67,7 @@ function readErrorMessage(body: unknown) {
   ) {
     const record = body as Record<string, unknown>;
 
-    if (
-      typeof record.detail === "string"
-    ) {
+    if (typeof record.detail === "string") {
       return record.detail;
     }
 
@@ -106,11 +106,9 @@ export async function analyseECG(
 
   const formData = new FormData();
 
-  formData.append("file", payload.files[0]);
-
-  if (payload.files.length > 1) {
-    formData.append("wfdb_file", payload.files[1]);
-  }
+  payload.files.forEach((file) => {
+    formData.append("files", file);
+  });
 
   appendMetadata(formData, payload.metadata);
 

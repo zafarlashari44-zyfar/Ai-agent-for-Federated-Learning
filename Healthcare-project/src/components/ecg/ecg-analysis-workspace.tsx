@@ -1,6 +1,6 @@
 ﻿"use client";
-import { analyseDemoECG } from "@/lib/demo-analysis";
 import { ChangeEvent, useMemo, useState } from "react";
+import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
   Activity,
   AlertTriangle,
@@ -390,14 +390,16 @@ function getEvidenceStyle(
 }
 
 export function ECGAnalysisWorkspace() {
-  const [selectedFile, setSelectedFile] =
-    useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] =
+    useState<File[]>([]);
 
-  const [analysis, setAnalysis] =
-    useState<ECGAnalysisResult | null>(null);
-
-  const [isAnalysing, setIsAnalysing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    analyse,
+    analysis,
+    loading: isAnalysing,
+    error,
+    reset,
+  } = useECGAnalysis();
 
   const [selectedBeatIndex, setSelectedBeatIndex] =
     useState<number | null>(null);
@@ -494,33 +496,35 @@ export function ECGAnalysisWorkspace() {
   function handleFileChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    setSelectedFile(event.target.files?.[0] ?? null);
-    setAnalysis(null);
+    const files = Array.from(event.target.files ?? []);
+
+    setSelectedFiles(files);
+    reset();
     setSelectedBeatIndex(null);
-    setError(null);
   }
 
- async function analyseFile() {
-  if (!selectedFile) {
-    setError("Select an ECG file before analysis.");
-    return;
+  async function analyseFile() {
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    try {
+      const result = await analyse({
+        files: selectedFiles,
+        metadata: {
+          selectedLead,
+        },
+        includeExplanations: true,
+        includeOverlay: true,
+      });
+
+      setSelectedBeatIndex(
+        result.beats.find((beat) => beat.isAbnormal)?.beatIndex ?? null,
+      );
+    } catch {
+      // Error state is handled by useECGAnalysis.
+    }
   }
-
-  setIsAnalysing(true);
-  setError(null);
-
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  const result = createDemoAnalysis(selectedFile.name);
-
-  setAnalysis(result);
-
-  setSelectedBeatIndex(
-    result.beats.find((beat) => beat.isAbnormal)?.beatIndex ?? null,
-  );
-
-  setIsAnalysing(false);
-}
 
   if (!analysis) {
     return (
@@ -551,18 +555,19 @@ export function ECGAnalysisWorkspace() {
             </div>
 
             <span className="mt-4 text-lg font-semibold">
-              {selectedFile
-                ? selectedFile.name
+              {selectedFiles.length > 0
+                ? selectedFiles.map((file) => file.name).join(", ")
                 : "Choose an ECG recording"}
             </span>
 
             <span className="mt-2 max-w-lg text-sm text-slate-500">
-              CSV, NPY, MAT, HEA and DAT formats are supported.
+              CSV, NPY, TXT and WFDB HEA plus DAT recordings are supported.
             </span>
 
             <input
               type="file"
-              accept=".csv,.npy,.mat,.hea,.dat"
+              multiple
+              accept=".csv,.npy,.txt,.hea,.dat"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -577,7 +582,7 @@ export function ECGAnalysisWorkspace() {
           <button
             type="button"
             onClick={analyseFile}
-            disabled={!selectedFile || isAnalysing}
+            disabled={selectedFiles.length === 0 || isAnalysing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAnalysing ? (
