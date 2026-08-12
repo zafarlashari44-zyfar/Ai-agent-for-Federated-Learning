@@ -1,0 +1,121 @@
+{
+  "_README": "Edit this file to correct or extend what the technical persona is allowed to claim. Anything absent here, the agent must decline to answer. Replace placeholder nulls with your team's real figures before the demo.",
+  "model": {
+    "task": "Per-beat ECG arrhythmia classification, AAMI 5-class scheme (N, S, V, F, Q)",
+    "architecture": "1D Convolutional Neural Network",
+    "input": "Single-lead ECG beat window, 216 samples, R-peak aligned at index 108",
+    "training_regime": "Federated averaging (FedAvg) across non-IID clients",
+    "checkpoint": "fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth",
+    "federated_rounds": 10,
+    "proximal_term_mu": 0.0,
+    "smote_applied": false,
+    "seed": 42,
+    "dataset": "MIT-BIH Arrhythmia Database",
+    "label_level": "BEAT-level annotations. NOTE: rhythm-level labels (atrial fibrillation, bradycardia, ventricular tachycardia) are a SEPARATE annotation set in MIT-BIH and are NOT used by this model. Questions about rhythm types cannot be answered from these labels.",
+    "design_rationale_for_1d_cnn": [
+      "Beat classification is a morphology problem: the discriminative information is in the local shape of the P-QRS-T complex within a single fixed-length window.",
+      "Convolution is translation-equivariant over the window, which suits R-peak-aligned beats where small alignment jitter should not change the prediction.",
+      "Each beat is classified independently, so there is no cross-beat temporal dependency for a recurrent architecture to exploit at this task framing.",
+      "Fewer parameters and no sequential unrolling means lower client-side compute and smaller update payloads, which matters under federated averaging.",
+      "NOTE: this is design rationale, NOT empirical evidence. No comparative experiment has been run \u2014 see comparisons_not_yet_run."
+    ]
+  },
+  "measured_performance": {
+    "_source": "outputs/calibration/calibration_metrics.json and outputs/evaluation/per_class_metrics.csv, as carried in the cohort provenance block. Figures below are the project's own measurements.",
+    "calibration": {
+      "evaluation_samples": 18347,
+      "num_bins": 15,
+      "accuracy": 0.9282,
+      "average_confidence": 0.8847,
+      "confidence_gap": -0.0435,
+      "expected_calibration_error": 0.0684,
+      "maximum_calibration_error": 0.1937,
+      "multiclass_brier_score": 0.1296,
+      "interpretation": "confidence_gap = average_confidence - accuracy = -0.0435. Mean confidence is BELOW accuracy, so on aggregate the model is UNDER-confident, not overconfident. ECE of 0.0684 measures the average magnitude of miscalibration across bins and is direction-agnostic; it does not on its own justify subtracting from confidence."
+    },
+    "per_class": {
+      "N": {
+        "precision": 0.9628,
+        "recall": 0.9956,
+        "f1": 0.9789,
+        "roc_auc": 0.8817,
+        "support": 15573,
+        "model_blind": false
+      },
+      "S": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "roc_auc": 0.2451,
+        "support": 401,
+        "model_blind": true
+      },
+      "V": {
+        "precision": 0.4259,
+        "recall": 0.8581,
+        "f1": 0.5693,
+        "roc_auc": 0.9693,
+        "support": 620,
+        "model_blind": false
+      },
+      "F": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "roc_auc": 0.8462,
+        "support": 17,
+        "model_blind": true
+      },
+      "Q": {
+        "precision": 0.999,
+        "recall": 0.572,
+        "f1": 0.7275,
+        "roc_auc": 0.998,
+        "support": 1736,
+        "model_blind": false
+      }
+    },
+    "per_class_notes": [
+      "S and F are flagged model_blind: recall 0.0. The model never emits these labels.",
+      "S has roc_auc 0.2451 - below chance. The ranking signal for class S is actively inverted, not merely absent.",
+      "V has high recall (0.8581) but low precision (0.4259): the model over-predicts V, so most V predictions are wrong.",
+      "Q has very high precision (0.9990) but recall 0.5720: when it says Q it is nearly always right, but it misses 43% of true Q beats."
+    ],
+    "accuracy_by_uncertainty_band": {
+      "low_uncertainty": 0.968,
+      "high_uncertainty": 0.664
+    },
+    "orchestration_run": {
+      "cohort_size": 250,
+      "successful_agent_calls": 227,
+      "transport_failures": 23,
+      "escalated_to_human_review": 156,
+      "auto_cleared": 94,
+      "misclassifications_among_successful_calls": 94,
+      "misclassifications_escalated": 50,
+      "misclassifications_auto_cleared": 44,
+      "safety_net_recall_on_errors": 0.532,
+      "false_alarm_rate_on_correct_predictions": 0.624
+    }
+  },
+  "comparisons_not_yet_run": [
+    "1D-CNN vs recurrent architectures (LSTM / GRU) on the same federated splits \u2014 NOT RUN. No accuracy figures exist for RNN variants in this project.",
+    "1D-CNN vs Transformer / attention-based encoders \u2014 NOT RUN.",
+    "1D-CNN vs classical baselines (SVM, random forest on handcrafted RR and morphology features) \u2014 NOT RUN.",
+    "FedAvg vs FedProx (mu > 0) \u2014 checkpoint naming implies mu=0.0 only; no sweep reported.",
+    "With vs without SMOTE resampling \u2014 checkpoint implies smote=0 only; no paired run reported.",
+    "Centralised training vs federated training on identical data \u2014 NOT RUN."
+  ],
+  "known_limitations": [
+    "Recall is 0.0 for classes S and F - the model cannot emit these labels. 50 true-S and 17 true-F beats in the 250-record cohort are structurally unreachable.",
+    "Class S has roc_auc 0.2451, below chance. The model's ranking signal for S is inverted, not just weak.",
+    "Class S failures are CONFIDENT failures. True-S beats auto-cleared in the orchestration run carried mean calibrated confidence 0.948 and mean normalised entropy 0.039, so uncertainty-based gates never fired.",
+    "Consequence: the governance layer caught 50 of 94 misclassifications (53.2%); 41 of the 44 misses were true class S.",
+    "OPEN ISSUE - calibration direction. The governance policy subtracts ECE (0.0684) from raw confidence before testing it against the 0.70 floor. But confidence_gap is -0.0435, meaning mean confidence sits BELOW accuracy: the model is under-confident on aggregate. Subtracting further is likely the wrong direction and inflates the false-alarm rate (currently 62.4%). This needs resolving before the results are cited.",
+    "Aggregate calibration hides per-class structure: the model is under-confident overall yet confidently wrong on class S.",
+    "SHAP region boundaries (r_peak_index 108, qrs_start 65, qrs_end 166) are marked unconfirmed in the pipeline's own provenance and must be verified against the explainability author's segmentation before being cited.",
+    "EHR triage text is stubbed. No clinical notes exist in the repository.",
+    "The human-in-the-loop gate is a timed 5-second hold, not genuine clinician sign-off, unless the Wait node is switched to webhook resume.",
+    "Beat-level labels only. Rhythm-level arrhythmias (atrial fibrillation, bradycardia, ventricular tachycardia) are a separate MIT-BIH annotation set and are out of scope for this model as trained."
+  ]
+}

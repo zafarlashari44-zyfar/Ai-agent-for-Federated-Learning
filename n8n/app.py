@@ -25,6 +25,13 @@ Changes from v1, and why each one matters for the orchestration layer:
    n8n). Optional floats are normalised to None.
 
 All new payload fields are Optional, so v1 clients keep working.
+
+v3 additions
+------------
+5. The persona router is mounted at the bottom of this file. It adds an
+   INTERACTIVE path (/api/ask, /api/patient/{id}, /api/cohort/summary,
+   /api/personas) alongside the existing BATCH path (/api/analyze-patient).
+   The batch contract is unchanged, so the n8n workflow is unaffected.
 """
 
 import json
@@ -39,7 +46,7 @@ from clinical_agent import generate_agent_response
 app = FastAPI(
     title="Agentic Federated Learning - Clinical Intelligence Service",
     description="FastAPI bridge connecting n8n orchestration nodes to local Bio-BERT & Medichat-Llama3 pipelines.",
-    version="2.0.0",
+    version="4.0.0",
 )
 
 NORMAL_CLASS = "Normal Sinus Rhythm"
@@ -107,7 +114,7 @@ def _fallback_output(payload: PatientPayload, raw: str) -> Dict[str, Any]:
 
 @app.get("/")
 def read_root():
-    return {"status": "operational", "service": "Clinical Agent API Bridge", "version": "2.0.0"}
+    return {"status": "operational", "service": "Clinical Agent API Bridge", "version": "4.0.0"}
 
 
 @app.get("/health")
@@ -196,7 +203,35 @@ def analyze_patient(payload: PatientPayload):
     }
 
 
+# ---------------------------------------------------------------------------
+# Persona layer (v3)
+#
+# Mounted last so that a missing or broken persona_service.py degrades to a
+# warning rather than taking the batch endpoint down with it — the n8n
+# orchestration run must never fail because the interactive layer is absent.
+# ---------------------------------------------------------------------------
+try:
+    from persona_service import router as persona_router
+
+    app.include_router(persona_router)
+    print("[API] Persona layer mounted: /api/ask, /api/patient/{id}, "
+          "/api/cohort/summary, /api/personas")
+except Exception as _persona_exc:  # noqa: BLE001
+    print(f"[API] WARNING - persona layer not mounted ({_persona_exc}). "
+          f"Batch endpoint /api/analyze-patient is unaffected.")
+
+try:
+    from profiles_service import router as profiles_router
+
+    app.include_router(profiles_router)
+    print("[API] Profiles layer mounted: /api/profiles, /api/profiles/{id}, "
+          "/api/profiles/{id}/stream")
+except Exception as _profiles_exc:  # noqa: BLE001
+    print(f"[API] WARNING - profiles layer not mounted ({_profiles_exc}). "
+          f"Batch endpoint /api/analyze-patient is unaffected.")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
