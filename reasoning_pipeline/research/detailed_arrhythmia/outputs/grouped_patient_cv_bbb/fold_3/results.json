@@ -1,0 +1,189 @@
+{
+  "experiment": "bbb_ontology_ablation",
+  "configuration": {
+    "seed": 42,
+    "epochs": 8,
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "early_stopping_patience": 3,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "effective_number_beta": 0.9999,
+    "input_length": 216,
+    "augmentation": {
+      "gaussian_noise_probability": 0.3,
+      "gaussian_noise_std_range": [
+        0.005,
+        0.02
+      ],
+      "amplitude_scale_probability": 0.3,
+      "amplitude_scale_range": [
+        0.9,
+        1.1
+      ],
+      "translation_probability": 0.2,
+      "maximum_translation_samples": 5,
+      "baseline_wander_probability": 0.2,
+      "maximum_baseline_wander_ratio": 0.05,
+      "temporal_stretch_probability": 0.2,
+      "temporal_stretch_range": [
+        0.95,
+        1.05
+      ],
+      "maximum_absolute_amplitude": 8.0,
+      "minimum_standard_deviation": 1e-06,
+      "central_qrs_energy_ratio_range": [
+        0.4,
+        1.75
+      ]
+    }
+  },
+  "training_seed": 42,
+  "ontology_labels": [
+    "N",
+    "BBB",
+    "A",
+    "V",
+    "F"
+  ],
+  "ontology_version": "mit_bih_detailed_bbb_v1",
+  "merged_labels": {
+    "BBB": [
+      "L",
+      "R"
+    ]
+  },
+  "loss": "weighted_cross_entropy",
+  "balanced_sampling_enabled": false,
+  "augmentation_enabled": false,
+  "class_weights": [
+    0.259397953748703,
+    0.5809712409973145,
+    1.2612766027450562,
+    0.8711358308792114,
+    2.0272183418273926
+  ],
+  "history": [
+    {
+      "epoch": 1.0,
+      "training_loss": 0.647661116612385,
+      "validation_macro_f1": 0.31785817816414397,
+      "validation_macro_f1_present_classes": 0.31785817816414397
+    },
+    {
+      "epoch": 2.0,
+      "training_loss": 0.28544070850686726,
+      "validation_macro_f1": 0.4837441416330866,
+      "validation_macro_f1_present_classes": 0.4837441416330866
+    },
+    {
+      "epoch": 3.0,
+      "training_loss": 0.22275826168725216,
+      "validation_macro_f1": 0.4835646506343977,
+      "validation_macro_f1_present_classes": 0.4835646506343977
+    },
+    {
+      "epoch": 4.0,
+      "training_loss": 0.19191105864140617,
+      "validation_macro_f1": 0.4023388722127561,
+      "validation_macro_f1_present_classes": 0.4023388722127561
+    },
+    {
+      "epoch": 5.0,
+      "training_loss": 0.18003366440831428,
+      "validation_macro_f1": 0.3544874737855144,
+      "validation_macro_f1_present_classes": 0.3544874737855144
+    }
+  ],
+  "validation": {
+    "macro_f1": 0.4837441416330866,
+    "weighted_f1": 0.8506464262318648,
+    "balanced_accuracy": 0.5878773799330894,
+    "per_class": {
+      "N": {
+        "precision": 0.970633545156942,
+        "recall": 0.8100441944556047,
+        "f1": 0.8830975428145942,
+        "support": 12445,
+        "false_negatives": 2364
+      },
+      "BBB": {
+        "precision": 0.7436889625944352,
+        "recall": 0.941231343283582,
+        "f1": 0.8308800823468863,
+        "support": 4288,
+        "false_negatives": 252
+      },
+      "A": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 130,
+        "false_negatives": 130
+      },
+      "V": {
+        "precision": 0.586473928755808,
+        "recall": 0.8547780285929271,
+        "f1": 0.6956521739130435,
+        "support": 1329,
+        "false_negatives": 193
+      },
+      "F": {
+        "precision": 0.004608294930875576,
+        "recall": 0.3333333333333333,
+        "f1": 0.00909090909090909,
+        "support": 3,
+        "false_negatives": 2
+      }
+    },
+    "confusion_matrix": [
+      [
+        10081,
+        1257,
+        224,
+        705,
+        178
+      ],
+      [
+        154,
+        4036,
+        3,
+        95,
+        0
+      ],
+      [
+        34,
+        95,
+        0,
+        1,
+        0
+      ],
+      [
+        116,
+        39,
+        0,
+        1136,
+        38
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.03101828356927877,
+    "present_labels": [
+      "N",
+      "BBB",
+      "A",
+      "V",
+      "F"
+    ],
+    "macro_f1_present_classes": 0.4837441416330866,
+    "abnormal_support": 5750,
+    "abnormal_to_normal_count": 305,
+    "abnormal_to_normal_fraction": 0.05304347826086957
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "model_version": "detailed-mit-bih-cnn1d-v1",
+  "ontology_version": "detailed-mit-bih-ontology-v1",
+  "labels": [
+    "N",
+    "L",
+    "R",
+    "A",
+    "V",
+    "F"
+  ],
+  "split_manifest_hash": "4cc8a808027aec48763f528e70b22020fb30940cdf6856b283fdc401332f613b",
+  "training_seed": 789,
+  "class_weight_method": "sqrt_inverse_frequency",
+  "class_weights": [
+    0.2511209547519684,
+    0.8241561055183411,
+    0.7555366158485413,
+    1.3468410968780518,
+    0.8291549682617188,
+    1.9931902885437012
+  ],
+  "augmentation_configuration": null,
+  "checkpoint_hash": "1e0282f5b49d38637a0f4ef4a5e58d3328b4b16811fa821cbc7978eedbda253b"
+}

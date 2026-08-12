@@ -1,0 +1,293 @@
+{
+  "configuration": {
+    "seed": 456,
+    "epochs": 8,
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "early_stopping_patience": 3,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "effective_number_beta": 0.9999,
+    "input_length": 216,
+    "augmentation": {
+      "gaussian_noise_probability": 0.3,
+      "gaussian_noise_std_range": [
+        0.005,
+        0.02
+      ],
+      "amplitude_scale_probability": 0.3,
+      "amplitude_scale_range": [
+        0.9,
+        1.1
+      ],
+      "translation_probability": 0.2,
+      "maximum_translation_samples": 5,
+      "baseline_wander_probability": 0.2,
+      "maximum_baseline_wander_ratio": 0.05,
+      "temporal_stretch_probability": 0.2,
+      "temporal_stretch_range": [
+        0.95,
+        1.05
+      ],
+      "maximum_absolute_amplitude": 8.0,
+      "minimum_standard_deviation": 1e-06,
+      "central_qrs_energy_ratio_range": [
+        0.4,
+        1.75
+      ]
+    }
+  },
+  "augmentation_enabled": false,
+  "history": [
+    {
+      "epoch": 1.0,
+      "training_loss": 0.6547924881472307,
+      "validation_macro_f1": 0.40693756340303305
+    },
+    {
+      "epoch": 2.0,
+      "training_loss": 0.28884822457444437,
+      "validation_macro_f1": 0.43105514574889753
+    },
+    {
+      "epoch": 3.0,
+      "training_loss": 0.23594959533097698,
+      "validation_macro_f1": 0.28660411561017135
+    },
+    {
+      "epoch": 4.0,
+      "training_loss": 0.2102435594388083,
+      "validation_macro_f1": 0.28008861217631503
+    },
+    {
+      "epoch": 5.0,
+      "training_loss": 0.18985450777645205,
+      "validation_macro_f1": 0.30674265333505707
+    }
+  ],
+  "validation": {
+    "macro_f1": 0.43105514574889753,
+    "weighted_f1": 0.6082791052979808,
+    "balanced_accuracy": 0.5088377815366105,
+    "per_class": {
+      "N": {
+        "precision": 0.7979427760699929,
+        "recall": 0.5767883086915648,
+        "f1": 0.6695768639317426,
+        "support": 11701,
+        "false_negatives": 4952
+      },
+      "L": {
+        "precision": 0.007874015748031496,
+        "recall": 0.0004710315591144607,
+        "f1": 0.0008888888888888889,
+        "support": 2123,
+        "false_negatives": 2122
+      },
+      "R": {
+        "precision": 0.9660912453760789,
+        "recall": 0.8586301369863014,
+        "f1": 0.9091964026689875,
+        "support": 1825,
+        "false_negatives": 258
+      },
+      "A": {
+        "precision": 0.14721919302071973,
+        "recall": 0.2915766738660907,
+        "f1": 0.1956521739130435,
+        "support": 463,
+        "false_negatives": 328
+      },
+      "V": {
+        "precision": 0.717663421418637,
+        "recall": 0.9255605381165919,
+        "f1": 0.8084606345475911,
+        "support": 1115,
+        "false_negatives": 83
+      },
+      "F": {
+        "precision": 0.001282051282051282,
+        "recall": 0.4,
+        "f1": 0.0025559105431309905,
+        "support": 15,
+        "false_negatives": 9
+      }
+    },
+    "confusion_matrix": [
+      [
+        6749,
+        124,
+        11,
+        586,
+        10,
+        4221
+      ],
+      [
+        1342,
+        1,
+        33,
+        0,
+        378,
+        369
+      ],
+      [
+        55,
+        0,
+        1567,
+        195,
+        8,
+        0
+      ],
+      [
+        291,
+        0,
+        6,
+        135,
+        2,
+        29
+      ],
+      [
+        20,
+        2,
+        5,
+        1,
+        1032,
+        55
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        8,
+        6
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.18264221600957434
+  },
+  "test": {
+    "macro_f1": 0.22947590176078111,
+    "weighted_f1": 0.714123449803266,
+    "balanced_accuracy": 0.34197773732598186,
+    "per_class": {
+      "N": {
+        "precision": 0.9652734270115457,
+        "recall": 0.7216943254817987,
+        "f1": 0.8258988398361221,
+        "support": 14944,
+        "false_negatives": 4159
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1457,
+        "false_negatives": 1457
+      },
+      "R": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 85,
+        "false_negatives": 85
+      },
+      "A": {
+        "precision": 0.002824858757062147,
+        "recall": 0.0024937655860349127,
+        "f1": 0.0026490066225165563,
+        "support": 401,
+        "false_negatives": 400
+      },
+      "V": {
+        "precision": 0.4253785147801009,
+        "recall": 0.748730964467005,
+        "f1": 0.542528735632184,
+        "support": 1576,
+        "false_negatives": 396
+      },
+      "F": {
+        "precision": 0.002903907074973601,
+        "recall": 0.5789473684210527,
+        "f1": 0.005778828473863935,
+        "support": 19,
+        "false_negatives": 8
+      }
+    },
+    "confusion_matrix": [
+      [
+        10785,
+        19,
+        332,
+        352,
+        41,
+        3415
+      ],
+      [
+        13,
+        0,
+        6,
+        0,
+        1438,
+        0
+      ],
+      [
+        85,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        236,
+        1,
+        5,
+        1,
+        107,
+        51
+      ],
+      [
+        54,
+        22,
+        8,
+        1,
+        1180,
+        311
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        8,
+        11
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.18513215887118906
+  },
+  "checkpoint_metadata": {
+    "model_version": "detailed-mit-bih-cnn1d-v1",
+    "ontology_version": "detailed-mit-bih-ontology-v1",
+    "labels": [
+      "N",
+      "L",
+      "R",
+      "A",
+      "V",
+      "F"
+    ],
+    "split_manifest_hash": "4cc8a808027aec48763f528e70b22020fb30940cdf6856b283fdc401332f613b",
+    "training_seed": 456,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "class_weights": [
+      0.2511209547519684,
+      0.8241561055183411,
+      0.7555366158485413,
+      1.3468410968780518,
+      0.8291549682617188,
+      1.9931902885437012
+    ],
+    "augmentation_configuration": null,
+    "checkpoint_hash": "e36dbf8eb0698ad1b0485eb9ffd76ac2708a71eba28daee30f847c3f87952f05"
+  }
+}

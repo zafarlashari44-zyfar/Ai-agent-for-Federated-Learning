@@ -1,0 +1,298 @@
+{
+  "configuration": {
+    "seed": 2026,
+    "epochs": 8,
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "early_stopping_patience": 3,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "effective_number_beta": 0.9999,
+    "input_length": 216,
+    "augmentation": {
+      "gaussian_noise_probability": 0.3,
+      "gaussian_noise_std_range": [
+        0.005,
+        0.02
+      ],
+      "amplitude_scale_probability": 0.3,
+      "amplitude_scale_range": [
+        0.9,
+        1.1
+      ],
+      "translation_probability": 0.2,
+      "maximum_translation_samples": 5,
+      "baseline_wander_probability": 0.2,
+      "maximum_baseline_wander_ratio": 0.05,
+      "temporal_stretch_probability": 0.2,
+      "temporal_stretch_range": [
+        0.95,
+        1.05
+      ],
+      "maximum_absolute_amplitude": 8.0,
+      "minimum_standard_deviation": 1e-06,
+      "central_qrs_energy_ratio_range": [
+        0.4,
+        1.75
+      ]
+    }
+  },
+  "augmentation_enabled": false,
+  "history": [
+    {
+      "epoch": 1.0,
+      "training_loss": 0.6487262489748936,
+      "validation_macro_f1": 0.2863657249259249
+    },
+    {
+      "epoch": 2.0,
+      "training_loss": 0.2985066010087144,
+      "validation_macro_f1": 0.40020084943937145
+    },
+    {
+      "epoch": 3.0,
+      "training_loss": 0.23774757320974388,
+      "validation_macro_f1": 0.42301195569303424
+    },
+    {
+      "epoch": 4.0,
+      "training_loss": 0.20337542643149695,
+      "validation_macro_f1": 0.3452455650553665
+    },
+    {
+      "epoch": 5.0,
+      "training_loss": 0.19087419889721216,
+      "validation_macro_f1": 0.2817771727040717
+    },
+    {
+      "epoch": 6.0,
+      "training_loss": 0.17381356370215323,
+      "validation_macro_f1": 0.2961372224974654
+    }
+  ],
+  "validation": {
+    "macro_f1": 0.42301195569303424,
+    "weighted_f1": 0.4913206441592635,
+    "balanced_accuracy": 0.47109867660248606,
+    "per_class": {
+      "N": {
+        "precision": 0.7433816425120773,
+        "recall": 0.3287753183488591,
+        "f1": 0.4559137236311922,
+        "support": 11701,
+        "false_negatives": 7854
+      },
+      "L": {
+        "precision": 0.4941860465116279,
+        "recall": 0.24022609514837495,
+        "f1": 0.3232963549920761,
+        "support": 2123,
+        "false_negatives": 1613
+      },
+      "R": {
+        "precision": 0.9494459833795014,
+        "recall": 0.7512328767123287,
+        "f1": 0.8387886203732028,
+        "support": 1825,
+        "false_negatives": 454
+      },
+      "A": {
+        "precision": 0.13924050632911392,
+        "recall": 0.1900647948164147,
+        "f1": 0.16073059360730593,
+        "support": 463,
+        "false_negatives": 375
+      },
+      "V": {
+        "precision": 0.6167698368036015,
+        "recall": 0.9829596412556054,
+        "f1": 0.7579529737206085,
+        "support": 1115,
+        "false_negatives": 19
+      },
+      "F": {
+        "precision": 0.0006961849067112225,
+        "recall": 0.3333333333333333,
+        "f1": 0.0013894678338196471,
+        "support": 15,
+        "false_negatives": 10
+      }
+    },
+    "confusion_matrix": [
+      [
+        3847,
+        516,
+        59,
+        244,
+        50,
+        6985
+      ],
+      [
+        958,
+        510,
+        8,
+        0,
+        531,
+        116
+      ],
+      [
+        64,
+        0,
+        1371,
+        299,
+        88,
+        3
+      ],
+      [
+        299,
+        6,
+        5,
+        88,
+        3,
+        62
+      ],
+      [
+        6,
+        0,
+        1,
+        1,
+        1096,
+        11
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        9,
+        5
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.3499403033410296
+  },
+  "test": {
+    "macro_f1": 0.21329700046631103,
+    "weighted_f1": 0.6476975867735444,
+    "balanced_accuracy": 0.2641980560953847,
+    "per_class": {
+      "N": {
+        "precision": 0.9687131683274403,
+        "recall": 0.6049919700214133,
+        "f1": 0.7448202001894798,
+        "support": 14944,
+        "false_negatives": 5903
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1457,
+        "false_negatives": 1457
+      },
+      "R": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 85,
+        "false_negatives": 85
+      },
+      "A": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 401,
+        "false_negatives": 401
+      },
+      "V": {
+        "precision": 0.4077310924369748,
+        "recall": 0.7696700507614214,
+        "f1": 0.5330696550208746,
+        "support": 1576,
+        "false_negatives": 363
+      },
+      "F": {
+        "precision": 0.000950344499881207,
+        "recall": 0.21052631578947367,
+        "f1": 0.001892147587511826,
+        "support": 19,
+        "false_negatives": 15
+      }
+    },
+    "confusion_matrix": [
+      [
+        9041,
+        394,
+        1368,
+        29,
+        183,
+        3929
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        1455,
+        0
+      ],
+      [
+        76,
+        4,
+        0,
+        0,
+        3,
+        2
+      ],
+      [
+        203,
+        24,
+        8,
+        0,
+        107,
+        59
+      ],
+      [
+        11,
+        98,
+        37,
+        2,
+        1213,
+        215
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        14,
+        4
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.2942567752240256
+  },
+  "checkpoint_metadata": {
+    "model_version": "detailed-mit-bih-cnn1d-v1",
+    "ontology_version": "detailed-mit-bih-ontology-v1",
+    "labels": [
+      "N",
+      "L",
+      "R",
+      "A",
+      "V",
+      "F"
+    ],
+    "split_manifest_hash": "4cc8a808027aec48763f528e70b22020fb30940cdf6856b283fdc401332f613b",
+    "training_seed": 2026,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "class_weights": [
+      0.2511209547519684,
+      0.8241561055183411,
+      0.7555366158485413,
+      1.3468410968780518,
+      0.8291549682617188,
+      1.9931902885437012
+    ],
+    "augmentation_configuration": null,
+    "checkpoint_hash": "99ec7de5fd6a705dd1f36c7db2daa8ee2e2547eacf9b4a81db3bb71bd860f374"
+  }
+}

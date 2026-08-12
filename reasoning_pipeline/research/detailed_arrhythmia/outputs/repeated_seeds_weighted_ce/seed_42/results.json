@@ -1,0 +1,288 @@
+{
+  "configuration": {
+    "seed": 42,
+    "epochs": 8,
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "early_stopping_patience": 3,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "effective_number_beta": 0.9999,
+    "input_length": 216,
+    "augmentation": {
+      "gaussian_noise_probability": 0.3,
+      "gaussian_noise_std_range": [
+        0.005,
+        0.02
+      ],
+      "amplitude_scale_probability": 0.3,
+      "amplitude_scale_range": [
+        0.9,
+        1.1
+      ],
+      "translation_probability": 0.2,
+      "maximum_translation_samples": 5,
+      "baseline_wander_probability": 0.2,
+      "maximum_baseline_wander_ratio": 0.05,
+      "temporal_stretch_probability": 0.2,
+      "temporal_stretch_range": [
+        0.95,
+        1.05
+      ],
+      "maximum_absolute_amplitude": 8.0,
+      "minimum_standard_deviation": 1e-06,
+      "central_qrs_energy_ratio_range": [
+        0.4,
+        1.75
+      ]
+    }
+  },
+  "augmentation_enabled": false,
+  "history": [
+    {
+      "epoch": 1.0,
+      "training_loss": 0.6420404729305529,
+      "validation_macro_f1": 0.3196112802276267
+    },
+    {
+      "epoch": 2.0,
+      "training_loss": 0.26890453754686844,
+      "validation_macro_f1": 0.2937514163962549
+    },
+    {
+      "epoch": 3.0,
+      "training_loss": 0.22423330527894636,
+      "validation_macro_f1": 0.281180083185076
+    },
+    {
+      "epoch": 4.0,
+      "training_loss": 0.20170591178477978,
+      "validation_macro_f1": 0.2731967442599641
+    }
+  ],
+  "validation": {
+    "macro_f1": 0.3196112802276267,
+    "weighted_f1": 0.6337295948416036,
+    "balanced_accuracy": 0.3358616415922111,
+    "per_class": {
+      "N": {
+        "precision": 0.7854006586169044,
+        "recall": 0.8560806768652252,
+        "f1": 0.8192189736250256,
+        "support": 11701,
+        "false_negatives": 1684
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 2123,
+        "false_negatives": 2123
+      },
+      "R": {
+        "precision": 0.9347826086956522,
+        "recall": 0.09424657534246575,
+        "f1": 0.1712294673967148,
+        "support": 1825,
+        "false_negatives": 1653
+      },
+      "A": {
+        "precision": 0.0026109660574412533,
+        "recall": 0.008639308855291577,
+        "f1": 0.0040100250626566416,
+        "support": 463,
+        "false_negatives": 459
+      },
+      "V": {
+        "precision": 0.91875,
+        "recall": 0.9228699551569507,
+        "f1": 0.9208053691275168,
+        "support": 1115,
+        "false_negatives": 86
+      },
+      "F": {
+        "precision": 0.001212856276531231,
+        "recall": 0.13333333333333333,
+        "f1": 0.002403846153846154,
+        "support": 15,
+        "false_negatives": 13
+      }
+    },
+    "confusion_matrix": [
+      [
+        10017,
+        1,
+        2,
+        10,
+        29,
+        1642
+      ],
+      [
+        2071,
+        0,
+        0,
+        3,
+        49,
+        0
+      ],
+      [
+        138,
+        0,
+        172,
+        1513,
+        2,
+        0
+      ],
+      [
+        453,
+        0,
+        0,
+        4,
+        4,
+        2
+      ],
+      [
+        69,
+        2,
+        10,
+        2,
+        1029,
+        3
+      ],
+      [
+        6,
+        0,
+        0,
+        0,
+        7,
+        2
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.17616571813196089
+  },
+  "test": {
+    "macro_f1": 0.26016855675969247,
+    "weighted_f1": 0.8237834360576338,
+    "balanced_accuracy": 0.349824152943009,
+    "per_class": {
+      "N": {
+        "precision": 0.9654773253438649,
+        "recall": 0.948808886509636,
+        "f1": 0.9570705366182922,
+        "support": 14944,
+        "false_negatives": 765
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1457,
+        "false_negatives": 1457
+      },
+      "R": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 85,
+        "false_negatives": 85
+      },
+      "A": {
+        "precision": 0.04,
+        "recall": 0.0024937655860349127,
+        "f1": 0.004694835680751174,
+        "support": 401,
+        "false_negatives": 400
+      },
+      "V": {
+        "precision": 0.45005149330587024,
+        "recall": 0.8318527918781726,
+        "f1": 0.5840944531075963,
+        "support": 1576,
+        "false_negatives": 265
+      },
+      "F": {
+        "precision": 0.007761966364812419,
+        "recall": 0.3157894736842105,
+        "f1": 0.015151515151515152,
+        "support": 19,
+        "false_negatives": 13
+      }
+    },
+    "confusion_matrix": [
+      [
+        14179,
+        44,
+        9,
+        20,
+        33,
+        659
+      ],
+      [
+        6,
+        0,
+        0,
+        2,
+        1449,
+        0
+      ],
+      [
+        85,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        285,
+        0,
+        0,
+        1,
+        107,
+        8
+      ],
+      [
+        131,
+        15,
+        17,
+        2,
+        1311,
+        100
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        13,
+        6
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.14475864037821373
+  },
+  "checkpoint_metadata": {
+    "model_version": "detailed-mit-bih-cnn1d-v1",
+    "ontology_version": "detailed-mit-bih-ontology-v1",
+    "labels": [
+      "N",
+      "L",
+      "R",
+      "A",
+      "V",
+      "F"
+    ],
+    "split_manifest_hash": "4cc8a808027aec48763f528e70b22020fb30940cdf6856b283fdc401332f613b",
+    "training_seed": 42,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "class_weights": [
+      0.2511209547519684,
+      0.8241561055183411,
+      0.7555366158485413,
+      1.3468410968780518,
+      0.8291549682617188,
+      1.9931902885437012
+    ],
+    "augmentation_configuration": null,
+    "checkpoint_hash": "c9452f6e272defde3df75892be2ccebcb215a4c0d22df101f707584592d0b1f3"
+  }
+}

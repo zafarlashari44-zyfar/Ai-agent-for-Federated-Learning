@@ -1,0 +1,293 @@
+{
+  "configuration": {
+    "seed": 123,
+    "epochs": 8,
+    "batch_size": 256,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "early_stopping_patience": 3,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "effective_number_beta": 0.9999,
+    "input_length": 216,
+    "augmentation": {
+      "gaussian_noise_probability": 0.3,
+      "gaussian_noise_std_range": [
+        0.005,
+        0.02
+      ],
+      "amplitude_scale_probability": 0.3,
+      "amplitude_scale_range": [
+        0.9,
+        1.1
+      ],
+      "translation_probability": 0.2,
+      "maximum_translation_samples": 5,
+      "baseline_wander_probability": 0.2,
+      "maximum_baseline_wander_ratio": 0.05,
+      "temporal_stretch_probability": 0.2,
+      "temporal_stretch_range": [
+        0.95,
+        1.05
+      ],
+      "maximum_absolute_amplitude": 8.0,
+      "minimum_standard_deviation": 1e-06,
+      "central_qrs_energy_ratio_range": [
+        0.4,
+        1.75
+      ]
+    }
+  },
+  "augmentation_enabled": false,
+  "history": [
+    {
+      "epoch": 1.0,
+      "training_loss": 0.629620756705602,
+      "validation_macro_f1": 0.2775105032054083
+    },
+    {
+      "epoch": 2.0,
+      "training_loss": 0.2853955502311389,
+      "validation_macro_f1": 0.29931368343304365
+    },
+    {
+      "epoch": 3.0,
+      "training_loss": 0.23651229841452018,
+      "validation_macro_f1": 0.24151864290957706
+    },
+    {
+      "epoch": 4.0,
+      "training_loss": 0.2098628101103446,
+      "validation_macro_f1": 0.288789885007158
+    },
+    {
+      "epoch": 5.0,
+      "training_loss": 0.18788179163547122,
+      "validation_macro_f1": 0.26279126856898277
+    }
+  ],
+  "validation": {
+    "macro_f1": 0.29931368343304365,
+    "weighted_f1": 0.6480469811660519,
+    "balanced_accuracy": 0.32223626175307096,
+    "per_class": {
+      "N": {
+        "precision": 0.8039684263885871,
+        "recall": 0.9488077942056234,
+        "f1": 0.8704037632301058,
+        "support": 11701,
+        "false_negatives": 599
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 2123,
+        "false_negatives": 2123
+      },
+      "R": {
+        "precision": 0.5,
+        "recall": 0.000547945205479452,
+        "f1": 0.0010946907498631637,
+        "support": 1825,
+        "false_negatives": 1824
+      },
+      "A": {
+        "precision": 0.039545810493343776,
+        "recall": 0.21814254859611232,
+        "f1": 0.06695392774279085,
+        "support": 463,
+        "false_negatives": 362
+      },
+      "V": {
+        "precision": 0.9737742303306728,
+        "recall": 0.7659192825112108,
+        "f1": 0.857429718875502,
+        "support": 1115,
+        "false_negatives": 261
+      },
+      "F": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 15,
+        "false_negatives": 15
+      }
+    },
+    "confusion_matrix": [
+      [
+        11102,
+        0,
+        0,
+        599,
+        0,
+        0
+      ],
+      [
+        2086,
+        0,
+        0,
+        18,
+        19,
+        0
+      ],
+      [
+        84,
+        0,
+        1,
+        1740,
+        0,
+        0
+      ],
+      [
+        362,
+        0,
+        0,
+        101,
+        0,
+        0
+      ],
+      [
+        165,
+        0,
+        1,
+        95,
+        854,
+        0
+      ],
+      [
+        10,
+        0,
+        0,
+        1,
+        4,
+        0
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.21050329311079863
+  },
+  "test": {
+    "macro_f1": 0.2104925100512892,
+    "weighted_f1": 0.7875996001714984,
+    "balanced_accuracy": 0.22400379888431152,
+    "per_class": {
+      "N": {
+        "precision": 0.9143973777105396,
+        "recall": 0.9706905781584583,
+        "f1": 0.941703453648403,
+        "support": 14944,
+        "false_negatives": 438
+      },
+      "L": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1457,
+        "false_negatives": 1457
+      },
+      "R": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 85,
+        "false_negatives": 85
+      },
+      "A": {
+        "precision": 0.01694915254237288,
+        "recall": 0.022443890274314215,
+        "f1": 0.019313304721030045,
+        "support": 401,
+        "false_negatives": 392
+      },
+      "V": {
+        "precision": 0.26497364638236703,
+        "recall": 0.35088832487309646,
+        "f1": 0.30193830193830196,
+        "support": 1576,
+        "false_negatives": 1023
+      },
+      "F": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 19,
+        "false_negatives": 19
+      }
+    },
+    "confusion_matrix": [
+      [
+        14506,
+        0,
+        0,
+        437,
+        1,
+        0
+      ],
+      [
+        31,
+        0,
+        0,
+        5,
+        1421,
+        0
+      ],
+      [
+        85,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        285,
+        0,
+        0,
+        9,
+        107,
+        0
+      ],
+      [
+        944,
+        0,
+        0,
+        79,
+        553,
+        0
+      ],
+      [
+        13,
+        0,
+        0,
+        1,
+        5,
+        0
+      ]
+    ],
+    "expected_calibration_error_10_bins": 0.07993981944264666
+  },
+  "checkpoint_metadata": {
+    "model_version": "detailed-mit-bih-cnn1d-v1",
+    "ontology_version": "detailed-mit-bih-ontology-v1",
+    "labels": [
+      "N",
+      "L",
+      "R",
+      "A",
+      "V",
+      "F"
+    ],
+    "split_manifest_hash": "4cc8a808027aec48763f528e70b22020fb30940cdf6856b283fdc401332f613b",
+    "training_seed": 123,
+    "class_weight_method": "sqrt_inverse_frequency",
+    "class_weights": [
+      0.2511209547519684,
+      0.8241561055183411,
+      0.7555366158485413,
+      1.3468410968780518,
+      0.8291549682617188,
+      1.9931902885437012
+    ],
+    "augmentation_configuration": null,
+    "checkpoint_hash": "67c3ad3e95519b2f6274dc2c2a5f066154153fbf24f342afa4806bad3476383c"
+  }
+}
