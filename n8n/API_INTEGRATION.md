@@ -25,7 +25,61 @@ n8n                           ← risk scoring, escalation, HITL, notify, audit
 
 ---
 
-## 2. Mapping table
+## 2. Request contract
+
+Read from `api/routes/analyse.py` on `origin/api-service` (`b3f9286`).
+
+**`POST /api/v1/analyse` is `multipart/form-data`, not JSON.** The n8n HTTP
+Request node needs Body Content Type = **Form-Data**, with `file` as a binary
+property rather than a text field.
+
+| Form field | Type | Required | Notes |
+|---|---|---|---|
+| `file` | binary | **yes** | One complete, **unsegmented** 1-D NumPy ECG recording. Beat segmentation happens server-side. Extension must be in the service's `supported_suffixes`. |
+| `sampling_rate_hz` | float > 0 | **yes** | |
+| `record_id` | str | no | Defaults to the uploaded filename stem |
+| `lead_name` | str | no | |
+| `include_explanations` | bool | no | Default `true` |
+| `include_overlay` | bool | no | Default `true` |
+| `overlay_start_sample` | int ≥ 0 | no | |
+| `overlay_stop_sample` | int > 0 | no | |
+| `overlay_downsample_limit` | int ≥ 1 | no | |
+
+Upload limit: **25 MB**. Larger uploads return 413.
+
+### Set both include flags to false for batch runs
+
+`governance_request_form()` sends `include_explanations=false` and
+`include_overlay=false` deliberately.
+
+Governance reads `prediction`, `recording_summary`, `evidence`, `reasoning`,
+`clinical_report` and `narrative`. It reads **nothing** from
+`recording_explanation` or `recording_attribution_overlay` — those exist for
+the frontend. Leaving the defaults on makes the pipeline compute per-beat
+attribution maps and a full-resolution overlay for every recording, serialise
+them, and send them, for data this layer discards. Across a queue that is a
+large, avoidable cost on both sides.
+
+Turn them on for a single recording a clinician is actively reviewing. Leave
+them off for the batch.
+
+### Error handling
+
+All four documented error statuses mean the recording was **not analysed**.
+`failsafe_record()` escalates each to human review rather than treating it as a
+clear result — the same principle as the previous architecture's
+agent-unreachable branch.
+
+| Status | Meaning |
+|---|---|
+| 413 | Upload exceeds 25 MB |
+| 415 | Unsupported ECG file format |
+| 422 | Malformed request or unprocessable recording |
+| 503 | Pipeline service unavailable |
+
+---
+
+## 3. Mapping table
 
 | API field | n8n field | Purpose |
 |---|---|---|
@@ -64,7 +118,7 @@ n8n                           ← risk scoring, escalation, HITL, notify, audit
 
 ---
 
-## 3. Duplicated logic removed
+## 4. Duplicated logic removed
 
 | Removed | Previously | Now |
 |---|---|---|
@@ -84,7 +138,7 @@ API response rather than the cohort file.
 
 ---
 
-## 4. Governance responsibilities retained
+## 5. Governance responsibilities retained
 
 Owned by n8n, unchanged in principle:
 
@@ -98,7 +152,7 @@ Owned by n8n, unchanged in principle:
 
 ---
 
-## 5. Governance assumptions checked against the API
+## 6. Governance assumptions checked against the API
 
 | Assumption | Status |
 |---|---|
@@ -111,7 +165,7 @@ Owned by n8n, unchanged in principle:
 
 ---
 
-## 6. API fields that would improve integration
+## 7. API fields that would improve integration
 
 Requests for the pipeline team, in priority order:
 
@@ -133,17 +187,26 @@ Requests for the pipeline team, in priority order:
 
 ---
 
-## Open questions before this goes live
+## Status and blockers
 
-1. **The request contract is unverified.** `analyse.py` in `api/schemas/`
-   defines the response only. What does the endpoint accept — a file upload, a
-   record identifier, a sample array? The n8n HTTP node cannot be finalised
-   without it.
-2. **Suitability and OOD are in the spec but not the schema** (see above).
-3. **Threshold values are provisional.** `CONFIDENCE_FLOOR`, `ENTROPY_CEILING`
-   and `ABNORMAL_BURDEN_CEILING` in `analyse_adapter.py` are policy defaults,
-   not derived from a calibration run against this API. They must be tuned
-   against real responses before any escalation rate is quoted.
-4. **The demonstrated 250-patient result used the old cohort path.** Those
-   numbers (53.2% catch rate, the class-S finding) do not transfer to this
-   architecture and must be re-derived against the API.
+### Resolved
+- **Request contract** — read from the route file; multipart, fields documented above.
+- **Calibration** — agreed with the pipeline team: no ECE correction in n8n. Raw `prediction.confidence` is used and n8n owns the operational thresholds.
+- **v7 results framing** — agreed: the 250-patient run is the **previous offline orchestration evaluation**. The live `/analyse` integration is a different architecture and is not expected to reproduce those numbers until the integrated system is evaluated separately.
+
+### Blocked on the pipeline team
+`signal_suitability`, `ood_assessment` and `analysis_scope` are **not present**
+on `origin/api-service` at `b3f9286`. Verified by grep against the schema on
+that commit — zero matches. The pipeline team reports these exist locally; they
+need pushing before the adapter can consume them.
+
+Once pushed, they become the **first gates**, ahead of confidence and risk
+routing, per the pipeline team's guidance: a recording that fails suitability
+or is flagged out-of-distribution should never reach confidence-based routing,
+because a confidence value on an unsuitable signal is not meaningful.
+
+### Still to calibrate
+`CONFIDENCE_FLOOR`, `ENTROPY_CEILING` and `ABNORMAL_BURDEN_CEILING` in
+`analyse_adapter.py` are provisional policy defaults, not derived from a
+calibration run against this API. They must be tuned against real responses
+before any escalation rate from the integrated system is quoted.

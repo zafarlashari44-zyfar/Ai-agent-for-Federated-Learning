@@ -320,3 +320,100 @@ def adapt(
             },
         },
     }
+
+# ---------------------------------------------------------------------------
+# REQUEST CONTRACT
+#
+# Read from api/routes/analyse.py on origin/api-service (b3f9286).
+# The endpoint is multipart/form-data, NOT JSON. n8n's HTTP Request node must
+# use Body Content Type = "Form-Data" with an n8n binary property for `file`.
+# ---------------------------------------------------------------------------
+ENDPOINT_PATH = "/api/v1/analyse"
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
+# Form fields the endpoint accepts. Only `file` and `sampling_rate_hz` are
+# required; `record_id` falls back to the uploaded filename stem.
+REQUEST_FIELDS = {
+    "file": "binary - one complete, unsegmented 1-D NumPy ECG recording. "
+            "Beat segmentation happens server-side. Extension must be in the "
+            "service's supported_suffixes (verify with the pipeline team).",
+    "sampling_rate_hz": "float > 0, REQUIRED",
+    "record_id": "str, optional - defaults to the filename stem",
+    "lead_name": "str, optional",
+    "include_explanations": "bool, default True",
+    "include_overlay": "bool, default True",
+    "overlay_start_sample": "int >= 0, optional",
+    "overlay_stop_sample": "int > 0, optional",
+    "overlay_downsample_limit": "int >= 1, optional",
+}
+
+
+def governance_request_form(
+    *,
+    sampling_rate_hz: float,
+    record_id: Optional[str] = None,
+    lead_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Form fields for a governance batch run.
+
+    include_explanations and include_overlay are set FALSE deliberately.
+
+    Governance consumes prediction, recording_summary, evidence, reasoning,
+    clinical_report and narrative. It reads nothing from
+    recording_explanation or recording_attribution_overlay - those exist for
+    the frontend. Leaving both at their default True makes the API build
+    per-beat attribution maps and a full-resolution overlay for every
+    recording, then serialise them, for data this layer discards.
+
+    On a long batch run that is the difference between a response of a few
+    kilobytes and one of many megabytes per recording. Turn them on for a
+    single recording a clinician is actually looking at; leave them off for
+    the queue.
+    """
+    form: Dict[str, Any] = {
+        "sampling_rate_hz": str(sampling_rate_hz),
+        "include_explanations": "false",
+        "include_overlay": "false",
+    }
+    if record_id:
+        form["record_id"] = record_id
+    if lead_name:
+        form["lead_name"] = lead_name
+    return form
+
+
+# Error responses the fail-safe branch must handle. All of these mean the
+# recording was NOT analysed - escalate, never treat as a clear result.
+ERROR_STATUSES = {
+    413: "Upload exceeds the 25 MB limit - recording not analysed",
+    415: "Unsupported ECG file format - recording not analysed",
+    422: "Malformed request or unprocessable recording - not analysed",
+    503: "Pipeline service unavailable - recording not analysed",
+}
+
+
+def failsafe_record(
+    status_code: int,
+    record_id: Optional[str],
+    detail: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Governance record for a recording the API could not analyse.
+
+    The operational principle from the previous architecture carries over
+    unchanged: a recording that cannot be assessed is escalated to a human,
+    never silently dropped and never counted as normal.
+    """
+    reason = ERROR_STATUSES.get(
+        status_code, f"API returned HTTP {status_code} - recording not analysed"
+    )
+    return {
+        "record_id": record_id,
+        "api_status": "error",
+        "api_status_code": status_code,
+        "api_detail": detail,
+        "human_review_required": True,
+        "review_reasons": [f"FAIL-SAFE: {reason}"],
+        "route": "Clinical Review Queue",
+        "governance_policy": POLICY_VERSION,
+        "field_provenance": {"governance_only": ["fail-safe escalation"]},
+    }
