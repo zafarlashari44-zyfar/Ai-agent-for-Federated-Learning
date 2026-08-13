@@ -3,8 +3,11 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from reasoning_pipeline.domain.enums.statuses import (
+    AnalysisScope,
     ConsistencyStatus,
     EvidenceDirection,
+    OODStatus,
+    SignalSuitabilityStatus,
 )
 from reasoning_pipeline.domain.models.attribution_map import AttributionMap
 from reasoning_pipeline.domain.models.attribution_point import AttributionPoint
@@ -13,6 +16,7 @@ from reasoning_pipeline.domain.models.beat_analysis_result import (
 )
 from reasoning_pipeline.domain.models.beat_explanation import BeatExplanation
 from reasoning_pipeline.domain.models.clinical_report import ClinicalReport
+from reasoning_pipeline.domain.models.ecg_signal import ECGSignal
 from reasoning_pipeline.domain.models.evidence_item import EvidenceItem
 from reasoning_pipeline.domain.models.model_prediction import ModelPrediction
 from reasoning_pipeline.domain.models.narrative_result import NarrativeResult
@@ -32,6 +36,36 @@ from reasoning_pipeline.domain.models.recording_explanation import (
 from reasoning_pipeline.orchestration.analysis_result import ECGAnalysisResult
 
 
+class SourceSignalMetadataResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    record_id: str
+    source_format: str | None
+    original_sampling_rate_hz: float | None
+    original_units: str | None
+    original_sample_count: int | None
+    original_duration_seconds: float | None
+    available_lead_names: tuple[str, ...]
+    selected_lead: str | None
+    warnings: tuple[str, ...]
+
+
+class HarmonisationMetadataResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_sampling_rate_hz: float | None
+    target_units: str | None
+    resampled: bool
+    unit_conversion_applied: str | None
+    resampling_method: str | None
+    resampling_up_factor: int | None
+    resampling_down_factor: int | None
+    harmonised_sample_count: int | None
+    harmonised_duration_seconds: float | None
+    transformations: tuple[str, ...]
+    warnings: tuple[str, ...]
+
+
 class SignalResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -41,6 +75,59 @@ class SignalResponse(BaseModel):
     duration_seconds: float
     source: str
     lead_name: str | None
+    source_format: str | None
+    original_sampling_rate_hz: float | None
+    lead_names: tuple[str, ...]
+    units: str | None
+    original_sample_count: int | None
+    original_duration_seconds: float | None
+    warnings: tuple[str, ...]
+    source_metadata: SourceSignalMetadataResponse
+    harmonisation_metadata: HarmonisationMetadataResponse
+
+    @classmethod
+    def from_domain(cls, signal: ECGSignal) -> SignalResponse:
+        return cls(
+            record_id=signal.record_id,
+            sampling_rate_hz=signal.sampling_rate_hz,
+            sample_count=signal.sample_count,
+            duration_seconds=signal.duration_seconds,
+            source=signal.source,
+            lead_name=signal.lead_name,
+            source_format=signal.source_format,
+            original_sampling_rate_hz=signal.original_sampling_rate_hz,
+            lead_names=signal.lead_names,
+            units=signal.units,
+            original_sample_count=signal.original_sample_count,
+            original_duration_seconds=signal.original_duration_seconds,
+            warnings=signal.warnings,
+            source_metadata=SourceSignalMetadataResponse(
+                record_id=signal.record_id,
+                source_format=signal.source_format,
+                original_sampling_rate_hz=signal.original_sampling_rate_hz,
+                original_units=signal.original_units,
+                original_sample_count=signal.original_sample_count,
+                original_duration_seconds=signal.original_duration_seconds,
+                available_lead_names=signal.lead_names,
+                selected_lead=signal.lead_name,
+                warnings=signal.warnings,
+            ),
+            harmonisation_metadata=HarmonisationMetadataResponse(
+                target_sampling_rate_hz=signal.target_sampling_rate_hz,
+                target_units=signal.target_units,
+                resampled=signal.resampled,
+                unit_conversion_applied=signal.unit_conversion_applied,
+                resampling_method=signal.resampling_method,
+                resampling_up_factor=signal.resampling_up_factor,
+                resampling_down_factor=signal.resampling_down_factor,
+                harmonised_sample_count=signal.harmonised_sample_count,
+                harmonised_duration_seconds=(
+                    signal.harmonised_duration_seconds
+                ),
+                transformations=signal.harmonisation_transformations,
+                warnings=signal.harmonisation_warnings,
+            ),
+        )
 
 
 class PredictionResponse(BaseModel):
@@ -641,6 +728,41 @@ class NarrativeResponse(BaseModel):
         )
 
 
+class SignalSuitabilityResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: SignalSuitabilityStatus
+    suitable_for_processing: bool
+    quality_score: float
+    duration_seconds: float
+    sampling_rate_hz: float
+    selected_lead: str | None
+    units: str | None
+    detected_r_peak_count: int
+    estimated_heart_rate_bpm: float | None
+    finite_sample_ratio: float
+    flatline_percentage: float
+    clipping_percentage: float
+    noise_score: float
+    warnings: tuple[str, ...]
+    rejection_reasons: tuple[str, ...]
+
+
+class OODAssessmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: OODStatus
+    heuristic_score: int
+    maximum_class_probability: float
+    normalized_prediction_entropy: float
+    q_class_proportion: float
+    low_confidence_beat_proportion: float
+    probability_instability: float
+    indicators: tuple[str, ...]
+    reasons: tuple[str, ...]
+    warnings: tuple[str, ...]
+
+
 class AnalysisResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -651,6 +773,14 @@ class AnalysisResponse(BaseModel):
     reasoning: ReasoningResponse
     clinical_report: ClinicalReportResponse
     narrative: NarrativeResponse
+    input_accepted: bool
+    model_prediction_produced: bool
+    signal_suitability: SignalSuitabilityResponse | None
+    ood_assessment: OODAssessmentResponse | None
+    analysis_scope: AnalysisScope
+    model_scope_statement: str
+    recommended_interpretation: str
+    analysis_warnings: tuple[str, ...]
     recording_explanation: RecordingExplanationResponse | None = None
     recording_attribution_overlay: (
         CompactRecordingAttributionOverlayResponse | None
@@ -670,14 +800,7 @@ class AnalysisResponse(BaseModel):
         evidence = result.evidence
 
         return cls(
-            signal=SignalResponse(
-                record_id=result.signal.record_id,
-                sampling_rate_hz=result.signal.sampling_rate_hz,
-                sample_count=result.signal.sample_count,
-                duration_seconds=result.signal.duration_seconds,
-                source=result.signal.source,
-                lead_name=result.signal.lead_name,
-            ),
+            signal=SignalResponse.from_domain(result.signal),
             prediction=PredictionResponse.from_domain(result.prediction),
             recording_summary=RecordingAnalysisSummaryResponse.from_domain(
                 result.recording_summary
@@ -703,6 +826,28 @@ class AnalysisResponse(BaseModel):
                 result.clinical_report
             ),
             narrative=NarrativeResponse.from_domain(result.narrative),
+            input_accepted=(
+                result.signal_suitability.suitable_for_processing
+                if result.signal_suitability is not None
+                else True
+            ),
+            model_prediction_produced=True,
+            signal_suitability=(
+                SignalSuitabilityResponse(
+                    **result.signal_suitability.__dict__
+                )
+                if result.signal_suitability is not None
+                else None
+            ),
+            ood_assessment=(
+                OODAssessmentResponse(**result.ood_assessment.__dict__)
+                if result.ood_assessment is not None
+                else None
+            ),
+            analysis_scope=result.analysis_scope,
+            model_scope_statement=result.model_scope_statement,
+            recommended_interpretation=result.recommended_interpretation,
+            analysis_warnings=result.analysis_warnings,
             recording_explanation=(
                 RecordingExplanationResponse.from_domain(
                     result.recording_explanation
