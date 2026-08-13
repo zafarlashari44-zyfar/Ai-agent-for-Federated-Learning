@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from typing import Annotated
 
 from fastapi import (
@@ -37,9 +37,6 @@ UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
         status.HTTP_413_CONTENT_TOO_LARGE: {
             "model": APIErrorResponse,
         },
-        status.HTTP_415_UNSUPPORTED_MEDIA_TYPE: {
-            "model": APIErrorResponse,
-        },
         status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "model": APIErrorResponse,
         },
@@ -51,18 +48,28 @@ UPLOAD_CHUNK_SIZE_BYTES = 1024 * 1024
 async def analyse_ecg(
     file: Annotated[
         UploadFile,
-        File(description="Complete, unsegmented NumPy ECG recording."),
-    ],
-    sampling_rate_hz: Annotated[
-        float,
-        Form(gt=0, description="ECG sampling rate in hertz."),
+        File(
+            description=(
+                "Complete ECG recording (.npy, .csv, .txt, .hea, or .dat)."
+            )
+        ),
     ],
     service: Annotated[
         PipelineService,
         Depends(get_pipeline_service),
     ],
+    sampling_rate_hz: Annotated[
+        float | None,
+        Form(gt=0, description="Sampling rate; inferred for WFDB records."),
+    ] = None,
     record_id: Annotated[str | None, Form()] = None,
     lead_name: Annotated[str | None, Form()] = None,
+    signal_column: Annotated[str | None, Form()] = None,
+    units: Annotated[str | None, Form()] = None,
+    wfdb_file: Annotated[
+        UploadFile | None,
+        File(description="Companion .hea or .dat file for WFDB records."),
+    ] = None,
     include_explanations: Annotated[
         bool,
         Form(
@@ -122,44 +129,32 @@ async def analyse_ecg(
             f"Supported formats are {supported}."
         )
 
-    temporary_path: Path | None = None
-
     try:
-        with NamedTemporaryFile(
-            mode="wb",
-            suffix=suffix,
-            prefix="ecg-upload-",
-            delete=False,
-        ) as temporary_file:
-            temporary_path = Path(temporary_file.name)
-            uploaded_size = 0
+        with TemporaryDirectory(prefix="ecg-upload-") as directory:
+            temporary_path = Path(directory) / Path(filename).name
+            await _save_upload(file, temporary_path)
+            companion_path: Path | None = None
+            if wfdb_file is not None:
+                companion_name = wfdb_file.filename or "wfdb-companion"
+                companion_path = Path(directory) / Path(companion_name).name
+                await _save_upload(wfdb_file, companion_path)
 
-            while chunk := await file.read(UPLOAD_CHUNK_SIZE_BYTES):
-                uploaded_size += len(chunk)
+            resolved_record_id = (
+                record_id.strip()
+                if record_id is not None and record_id.strip()
+                else Path(filename).stem
+            )
 
-                if uploaded_size > MAX_UPLOAD_SIZE_BYTES:
-                    raise UploadTooLargeError(
-                        "Uploaded ECG file exceeds the 25 MB limit."
-                    )
-
-                temporary_file.write(chunk)
-
-        if uploaded_size == 0:
-            raise ValueError("Uploaded ECG file cannot be empty.")
-
-        resolved_record_id = (
-            record_id.strip()
-            if record_id is not None and record_id.strip()
-            else Path(filename).stem
-        )
-
-        result = service.analyse_file(
-            file_path=temporary_path,
-            sampling_rate_hz=sampling_rate_hz,
-            record_id=resolved_record_id,
-            source="api-upload",
-            lead_name=lead_name,
-        )
+            result = service.analyse_file(
+                file_path=temporary_path,
+                companion_file_path=companion_path,
+                sampling_rate_hz=sampling_rate_hz,
+                record_id=resolved_record_id,
+                source="api-upload",
+                lead_name=lead_name.strip() if lead_name else None,
+                signal_column=signal_column.strip() if signal_column else None,
+                units=units.strip() if units else None,
+            )
 
         return AnalysisResponse.from_domain(
             result,
@@ -171,9 +166,20 @@ async def analyse_ecg(
         )
     finally:
         await file.close()
+        if wfdb_file is not None:
+            await wfdb_file.close()
 
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
+
+async def _save_upload(upload: UploadFile, destination: Path) -> None:
+    uploaded_size = 0
+    with destination.open("wb") as temporary_file:
+        while chunk := await upload.read(UPLOAD_CHUNK_SIZE_BYTES):
+            uploaded_size += len(chunk)
+            if uploaded_size > MAX_UPLOAD_SIZE_BYTES:
+                raise UploadTooLargeError("Uploaded ECG file exceeds the 25 MB limit.")
+            temporary_file.write(chunk)
+    if uploaded_size == 0:
+        raise ValueError(f"Uploaded ECG file '{destination.name}' cannot be empty.")
 
 
 class UploadTooLargeError(ValueError):
