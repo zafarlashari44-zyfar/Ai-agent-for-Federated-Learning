@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ChangeEvent, useMemo, useState } from "react";
 import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
@@ -512,7 +512,10 @@ export function ECGAnalysisWorkspace() {
       const result = await analyse({
         files: selectedFiles,
         metadata: {
-          selectedLead,
+          selectedLead:
+            selectedFiles.some((file) => file.name.toLowerCase().endsWith(".hea"))
+              ? "MLII"
+              : selectedLead,
         },
         includeExplanations: true,
         includeOverlay: true,
@@ -1083,6 +1086,7 @@ export function ECGAnalysisWorkspace() {
     </div>
   );
 }
+
 
 
 

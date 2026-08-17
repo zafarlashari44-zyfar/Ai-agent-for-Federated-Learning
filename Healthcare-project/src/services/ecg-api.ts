@@ -106,9 +106,11 @@ export async function analyseECG(
 
   const formData = new FormData();
 
-  payload.files.forEach((file) => {
-    formData.append("files", file);
-  });
+  formData.append("file", payload.files[0]);
+
+  if (payload.files.length > 1) {
+    formData.append("wfdb_file", payload.files[1]);
+  }
 
   appendMetadata(formData, payload.metadata);
 
@@ -166,3 +168,5 @@ export async function analyseECG(
 
   return adaptECGAnalysisResponse(body);
 }
+
+
