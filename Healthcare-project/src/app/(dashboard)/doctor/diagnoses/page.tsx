@@ -41,7 +41,16 @@ export default async function DiagnosesPage() {
     throw new Error(`Unable to load AI diagnoses: ${error.message}`);
   }
 
-  const diagnoses = data ?? [];
+  const diagnoses = (data ?? []).sort((a, b) => {
+  const aGoverned = a.governance_route ? 1 : 0;
+  const bGoverned = b.governance_route ? 1 : 0;
+
+  if (aGoverned !== bGoverned) {
+    return bGoverned - aGoverned;
+  }
+
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+});
 
   return (
     <div className="space-y-5">
@@ -274,4 +283,7 @@ export default async function DiagnosesPage() {
     </div>
   );
 }
+
+
+
 
