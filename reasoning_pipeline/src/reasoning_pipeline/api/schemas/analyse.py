@@ -130,6 +130,161 @@ class SignalResponse(BaseModel):
         )
 
 
+
+class CompactSignalWaveformResponse(BaseModel):
+    """Compact frontend representation of the harmonised ECG waveform."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    record_id: str
+    sampling_rate_hz: float
+    total_sample_count: int
+    start_sample_index: int
+    stop_sample_index_exclusive: int
+    source_window_sample_count: int
+    returned_point_count: int
+    downsampled: bool
+    downsampling_strategy: str | None
+    sample_indices: tuple[int, ...]
+    timestamps_seconds: tuple[float, ...]
+    amplitudes: tuple[float, ...]
+    units: str | None
+    lead_name: str | None
+    warnings: tuple[str, ...]
+
+    @classmethod
+    def from_domain(
+        cls,
+        signal: ECGSignal,
+        *,
+        start_sample: int | None = None,
+        stop_sample: int | None = None,
+        downsample_limit: int | None = None,
+    ) -> "CompactSignalWaveformResponse":
+        start = 0 if start_sample is None else start_sample
+        stop = signal.sample_count if stop_sample is None else stop_sample
+
+        cls._validate_window(
+            total_sample_count=signal.sample_count,
+            start_sample=start,
+            stop_sample=stop,
+            downsample_limit=downsample_limit,
+        )
+
+        indexed_samples = tuple(
+            (index, signal.samples[index])
+            for index in range(start, stop)
+        )
+
+        selected_samples = indexed_samples
+        downsampled = (
+            downsample_limit is not None
+            and len(indexed_samples) > downsample_limit
+        )
+
+        if downsampled:
+            assert downsample_limit is not None
+            selected_samples = cls._min_max_downsample(
+                indexed_samples,
+                limit=downsample_limit,
+            )
+
+        return cls(
+            record_id=signal.record_id,
+            sampling_rate_hz=signal.sampling_rate_hz,
+            total_sample_count=signal.sample_count,
+            start_sample_index=start,
+            stop_sample_index_exclusive=stop,
+            source_window_sample_count=stop - start,
+            returned_point_count=len(selected_samples),
+            downsampled=downsampled,
+            downsampling_strategy=(
+                "contiguous-bin-min-max"
+                if downsampled
+                else None
+            ),
+            sample_indices=tuple(
+                index for index, _ in selected_samples
+            ),
+            timestamps_seconds=tuple(
+                index / signal.sampling_rate_hz
+                for index, _ in selected_samples
+            ),
+            amplitudes=tuple(
+                float(value) for _, value in selected_samples
+            ),
+            units=signal.units,
+            lead_name=signal.lead_name,
+            warnings=signal.warnings,
+        )
+
+    @staticmethod
+    def _validate_window(
+        *,
+        total_sample_count: int,
+        start_sample: int,
+        stop_sample: int,
+        downsample_limit: int | None,
+    ) -> None:
+        if start_sample < 0:
+            raise ValueError(
+                "waveform_start_sample must be non-negative."
+            )
+
+        if stop_sample > total_sample_count:
+            raise ValueError(
+                "waveform_stop_sample cannot exceed the recording length."
+            )
+
+        if start_sample >= stop_sample:
+            raise ValueError(
+                "waveform_start_sample must be less than waveform_stop_sample."
+            )
+
+        if downsample_limit is not None and downsample_limit < 2:
+            raise ValueError(
+                "waveform_downsample_limit must be at least two."
+            )
+
+    @staticmethod
+    def _min_max_downsample(
+        samples: tuple[tuple[int, float], ...],
+        *,
+        limit: int,
+    ) -> tuple[tuple[int, float], ...]:
+        if len(samples) <= limit:
+            return samples
+
+        bin_count = max(1, limit // 2)
+        selected: list[tuple[int, float]] = []
+
+        for bin_index in range(bin_count):
+            bin_start = (bin_index * len(samples)) // bin_count
+            bin_stop = ((bin_index + 1) * len(samples)) // bin_count
+            bin_samples = samples[bin_start:bin_stop]
+
+            if not bin_samples:
+                continue
+
+            minimum = min(bin_samples, key=lambda item: item[1])
+            maximum = max(bin_samples, key=lambda item: item[1])
+
+            if minimum[0] <= maximum[0]:
+                selected.extend((minimum, maximum))
+            else:
+                selected.extend((maximum, minimum))
+
+        unique = {
+            index: (index, value)
+            for index, value in selected
+        }
+
+        return tuple(
+            unique[index]
+            for index in sorted(unique)
+        )[:limit]
+
+
 class PredictionResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -767,6 +922,7 @@ class AnalysisResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     signal: SignalResponse
+    waveform: CompactSignalWaveformResponse
     prediction: PredictionResponse
     recording_summary: RecordingAnalysisSummaryResponse
     evidence: EvidenceResponse
@@ -796,11 +952,20 @@ class AnalysisResponse(BaseModel):
         overlay_start_sample: int | None = None,
         overlay_stop_sample: int | None = None,
         overlay_downsample_limit: int | None = None,
+        waveform_start_sample: int | None = None,
+        waveform_stop_sample: int | None = None,
+        waveform_downsample_limit: int | None = 20000,
     ) -> AnalysisResponse:
         evidence = result.evidence
 
         return cls(
             signal=SignalResponse.from_domain(result.signal),
+            waveform=CompactSignalWaveformResponse.from_domain(
+                result.signal,
+                start_sample=waveform_start_sample,
+                stop_sample=waveform_stop_sample,
+                downsample_limit=waveform_downsample_limit,
+            ),
             prediction=PredictionResponse.from_domain(result.prediction),
             recording_summary=RecordingAnalysisSummaryResponse.from_domain(
                 result.recording_summary

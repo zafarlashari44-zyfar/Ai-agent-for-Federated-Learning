@@ -1,6 +1,6 @@
-﻿"use client";
-import { analyseDemoECG } from "@/lib/demo-analysis";
+"use client";
 import { ChangeEvent, useMemo, useState } from "react";
+import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
   Activity,
   AlertTriangle,
@@ -22,7 +22,6 @@ import { ECGBeatMetrics } from "@/components/ecg/ecg-beat-metrics";
 import { ECGEventTimeline } from "@/components/ecg/ecg-event-timeline";
 import { ECGLeadSelector } from "@/components/ecg/ecg-lead-selector";
 import { ECGClinicalReport } from "@/components/ecg/ecg-clinical-report";
-import { ECGProbabilityPanel } from "@/components/ecg/ecg-probability-panel";
 import { ECGWaveformViewer } from "@/components/ecg/ecg-waveform-viewer";
 import type {
   AttributionRegion,
@@ -390,14 +389,16 @@ function getEvidenceStyle(
 }
 
 export function ECGAnalysisWorkspace() {
-  const [selectedFile, setSelectedFile] =
-    useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] =
+    useState<File[]>([]);
 
-  const [analysis, setAnalysis] =
-    useState<ECGAnalysisResult | null>(null);
-
-  const [isAnalysing, setIsAnalysing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    analyse,
+    analysis,
+    loading: isAnalysing,
+    error,
+    reset,
+  } = useECGAnalysis();
 
   const [selectedBeatIndex, setSelectedBeatIndex] =
     useState<number | null>(null);
@@ -494,33 +495,38 @@ export function ECGAnalysisWorkspace() {
   function handleFileChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    setSelectedFile(event.target.files?.[0] ?? null);
-    setAnalysis(null);
+    const files = Array.from(event.target.files ?? []);
+
+    setSelectedFiles(files);
+    reset();
     setSelectedBeatIndex(null);
-    setError(null);
   }
 
- async function analyseFile() {
-  if (!selectedFile) {
-    setError("Select an ECG file before analysis.");
-    return;
+  async function analyseFile() {
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    try {
+      const result = await analyse({
+        files: selectedFiles,
+        metadata: {
+          selectedLead:
+            selectedFiles.some((file) => file.name.toLowerCase().endsWith(".hea"))
+              ? "MLII"
+              : selectedLead,
+        },
+        includeExplanations: true,
+        includeOverlay: true,
+      });
+
+      setSelectedBeatIndex(
+        result.beats.find((beat) => beat.isAbnormal)?.beatIndex ?? null,
+      );
+    } catch {
+      // Error state is handled by useECGAnalysis.
+    }
   }
-
-  setIsAnalysing(true);
-  setError(null);
-
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  const result = createDemoAnalysis(selectedFile.name);
-
-  setAnalysis(result);
-
-  setSelectedBeatIndex(
-    result.beats.find((beat) => beat.isAbnormal)?.beatIndex ?? null,
-  );
-
-  setIsAnalysing(false);
-}
 
   if (!analysis) {
     return (
@@ -551,18 +557,19 @@ export function ECGAnalysisWorkspace() {
             </div>
 
             <span className="mt-4 text-lg font-semibold">
-              {selectedFile
-                ? selectedFile.name
+              {selectedFiles.length > 0
+                ? selectedFiles.map((file) => file.name).join(", ")
                 : "Choose an ECG recording"}
             </span>
 
             <span className="mt-2 max-w-lg text-sm text-slate-500">
-              CSV, NPY, MAT, HEA and DAT formats are supported.
+              CSV, NPY, TXT and WFDB HEA plus DAT recordings are supported.
             </span>
 
             <input
               type="file"
-              accept=".csv,.npy,.mat,.hea,.dat"
+              multiple
+              accept=".csv,.npy,.txt,.hea,.dat"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -577,7 +584,7 @@ export function ECGAnalysisWorkspace() {
           <button
             type="button"
             onClick={analyseFile}
-            disabled={!selectedFile || isAnalysing}
+            disabled={selectedFiles.length === 0 || isAnalysing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAnalysing ? (
@@ -625,8 +632,8 @@ export function ECGAnalysisWorkspace() {
             </p>
           </div>
 
-          <div className="grid min-w-80 grid-cols-2 border-t border-white/10 lg:border-l lg:border-t-0">
-            <div className="border-r border-white/10 p-5">
+          <div className="min-w-56 border-t border-white/10 lg:border-l lg:border-t-0">
+            <div className="p-5">
               <p className="text-xs uppercase tracking-wide text-slate-500">
                 Confidence
               </p>
@@ -716,7 +723,7 @@ export function ECGAnalysisWorkspace() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="space-y-5">
         <div className="space-y-5">
           <div className="rounded-3xl border bg-white p-4 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -849,7 +856,7 @@ export function ECGAnalysisWorkspace() {
 
         </div>
 
-        <aside className="space-y-5">
+        <div className="grid gap-5 xl:grid-cols-2">
           <section className="rounded-3xl border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-semibold">
               Selected beat
@@ -923,17 +930,12 @@ export function ECGAnalysisWorkspace() {
             )}
           </section>
 
-          <ECGProbabilityPanel
-            probabilities={analysis.prediction.classProbabilities}
-            predictedClassCode={analysis.prediction.classCode}
-          />
-
           <section className="rounded-3xl border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-semibold">
               Recording details
             </h3>
 
-            <div className="mt-4 divide-y text-sm">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
               {[
                 [
                   "Dataset",
@@ -964,22 +966,23 @@ export function ECGAnalysisWorkspace() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="flex justify-between gap-4 py-3"
+                  className="rounded-xl border bg-slate-50 p-3"
                 >
-                  <span className="text-slate-500">
+                  <span className="block text-xs text-slate-500">
                     {label}
                   </span>
 
-                  <span className="text-right font-medium">
+                  <span className="mt-1 block font-medium text-slate-900">
                     {value}
                   </span>
                 </div>
               ))}
             </div>
           </section>
-        </aside>
+        </div>
       </section>
-<section className="grid gap-5 xl:grid-cols-2">
+
+      <section className="grid gap-5 xl:grid-cols-2">
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold">
             Clinical evidence
@@ -1078,6 +1081,7 @@ export function ECGAnalysisWorkspace() {
     </div>
   );
 }
+
 
 
 

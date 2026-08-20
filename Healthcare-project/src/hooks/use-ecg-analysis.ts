@@ -1,40 +1,90 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { analyseECG } from "@/lib/ecg-api";
+import { useCallback, useRef, useState } from "react";
+
+import {
+  analyseECG,
+  type ECGUploadPayload,
+} from "@/services/ecg-api";
+
+import type {
+  ECGAnalysisResult,
+} from "@/types/ecg-analysis";
 
 export function useECGAnalysis() {
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [analysis, setAnalysis] =
+    useState<ECGAnalysisResult | null>(null);
 
-  async function analyse(formData: FormData) {
-    try {
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const controllerRef =
+    useRef<AbortController | null>(null);
+
+  const analyse = useCallback(
+    async (
+      payload: ECGUploadPayload,
+    ): Promise<ECGAnalysisResult> => {
+      controllerRef.current?.abort();
+
+      const controller = new AbortController();
+      controllerRef.current = controller;
+
       setLoading(true);
       setError(null);
 
-      const result = await analyseECG(formData);
+      try {
+        const result = await analyseECG(
+          payload,
+          controller.signal,
+        );
 
-      setAnalysis(result);
+        setAnalysis(result);
 
-      return result;
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Analysis failed.",
-      );
+        return result;
+      } catch (caughtError) {
+        if (
+          caughtError instanceof Error &&
+          caughtError.name === "AbortError"
+        ) {
+          throw caughtError;
+        }
 
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }
+        const message =
+          caughtError instanceof Error
+            ? caughtError.message
+            : "ECG analysis failed.";
+
+        setError(message);
+
+        throw caughtError;
+      } finally {
+        if (controllerRef.current === controller) {
+          controllerRef.current = null;
+        }
+
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const reset = useCallback(() => {
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+
+    setAnalysis(null);
+    setError(null);
+    setLoading(false);
+  }, []);
 
   return {
     analyse,
     analysis,
     loading,
     error,
+    reset,
   };
 }
