@@ -1,0 +1,33 @@
+{
+  "experiment": "lime_locality",
+  "record": "119",
+  "beat_index": 1,
+  "prediction": "V",
+  "original_confidence": 0.9438331723213196,
+  "num_samples": 2500,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "results": [
+    {
+      "mask_probability": 0.01,
+      "strongest_regions": [
+        18,
+        20,
+        20,
+        20,
+        19
+      ],
+      "mean_target_probability": 0.6866055011749268,
+      "fraction_retaining_target_class": 0.7784,
+      "mean_pearson": 0.996445894241333,
+      "mean_spearman": 0.8963445778540116,
+      "mean_top10": 0.8200000000000001,
+      "mean_top20": 1.0
+    }
+  ]
+}

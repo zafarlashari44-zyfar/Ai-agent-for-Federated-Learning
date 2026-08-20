@@ -1,0 +1,81 @@
+{
+  "experiment": "lime_locality",
+  "record": "119",
+  "beat_index": 1,
+  "prediction": "V",
+  "original_confidence": 0.9438331723213196,
+  "num_samples": 2500,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "results": [
+    {
+      "mask_probability": 0.05,
+      "strongest_regions": [
+        20,
+        19,
+        19,
+        20,
+        19
+      ],
+      "mean_target_probability": 0.40072186589241027,
+      "fraction_retaining_target_class": 0.43936000000000003,
+      "mean_pearson": 0.9856523633003235,
+      "mean_spearman": 0.9553344768439105,
+      "mean_top10": 0.72,
+      "mean_top20": 0.9636363636363636
+    },
+    {
+      "mask_probability": 0.1,
+      "strongest_regions": [
+        19,
+        19,
+        19,
+        21,
+        19
+      ],
+      "mean_target_probability": 0.1284256398677826,
+      "fraction_retaining_target_class": 0.12935999999999998,
+      "mean_pearson": 0.9656047403812409,
+      "mean_spearman": 0.9419477796836284,
+      "mean_top10": 0.6,
+      "mean_top20": 0.8999999999999998
+    },
+    {
+      "mask_probability": 0.2,
+      "strongest_regions": [
+        22,
+        21,
+        19,
+        20,
+        22
+      ],
+      "mean_target_probability": 0.008202600572258235,
+      "fraction_retaining_target_class": 0.00624,
+      "mean_pearson": 0.7345909118652344,
+      "mean_spearman": 0.7363598246617113,
+      "mean_top10": 0.5800000000000001,
+      "mean_top20": 0.7363636363636364
+    },
+    {
+      "mask_probability": 0.3,
+      "strongest_regions": [
+        20,
+        9,
+        19,
+        41,
+        22
+      ],
+      "mean_target_probability": 0.0006372618721798062,
+      "fraction_retaining_target_class": 0.0004,
+      "mean_pearson": 0.12949179336428643,
+      "mean_spearman": 0.1446540880503144,
+      "mean_top10": 0.04,
+      "mean_top20": 0.3
+    }
+  ]
+}
