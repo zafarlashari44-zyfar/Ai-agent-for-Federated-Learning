@@ -1,0 +1,190 @@
+{
+  "name": "MediCare Pro - Notification Bridge",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "medicare-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "790d20e8-2bdc-498a-94ba-3eed5f9040e1",
+      "name": "MediCare Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -620,
+        0
+      ],
+      "webhookId": "2eaa7307-dca8-4c05-9ca5-bdf842258a7a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $input.first().json;\nconst expectedSecret = $env.N8N_WEBHOOK_SECRET || $env.N8N_API_KEY;\nconst authorization = request.headers?.authorization || request.headers?.Authorization || '';\n\nif (!expectedSecret || authorization !== `Bearer ${expectedSecret}`) {\n  throw new Error('Unauthorized MediCare Pro webhook request.');\n}\n\nconst payload = request.body;\nif (!payload || typeof payload !== 'object' || typeof payload.event !== 'string' || !payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data)) {\n  throw new Error('Invalid MediCare Pro event payload.');\n}\n\nreturn [{\n  json: {\n    event: payload.event,\n    data: payload.data,\n    healthCheck: payload.event === 'automation.health'\n  }\n}];"
+      },
+      "id": "ee653feb-caa4-427d-aa7c-0b39be671a06",
+      "name": "Validate Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "747af88c-429d-4d0b-95b0-18879d76fe23",
+              "leftValue": "={{ $json.healthCheck }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "adbb6100-9517-4128-9891-e1555f5d0af0",
+      "name": "Health Check?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, service: 'n8n', workflow: 'medicare-events' }) }}",
+        "options": {}
+      },
+      "id": "8cdd49ac-3a85-46d0-95cc-94e3813cf7bb",
+      "name": "Respond Healthy",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        60,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.MEDICARE_APP_URL || 'http://localhost:3000') + '/api/webhooks/n8n' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + ($env.N8N_WEBHOOK_SECRET || $env.N8N_API_KEY) }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ event: $json.event, data: $json.data }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "2aeac817-b9ba-4ee8-bab5-68eb9a74cae6",
+      "name": "Create App Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, forwarded: true, appResponse: $json }) }}",
+        "options": {}
+      },
+      "id": "0ea8c7a8-b4a1-47e8-a0e3-45f00ee35f22",
+      "name": "Respond Forwarded",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        300,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "MediCare Event": {
+      "main": [
+        [
+          {
+            "node": "Validate Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Event": {
+      "main": [
+        [
+          {
+            "node": "Health Check?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Check?": {
+      "main": [
+        [
+          {
+            "node": "Respond Healthy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create App Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create App Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond Forwarded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "active": false,
+  "tags": []
+}

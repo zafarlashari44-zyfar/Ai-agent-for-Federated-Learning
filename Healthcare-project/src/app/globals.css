@@ -1,0 +1,244 @@
+﻿@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(221.2 83.2% 53.3%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(221.2 83.2% 53.3%);
+  --color-sidebar: hsl(0 0% 98%);
+  --color-sidebar-foreground: hsl(240 5.3% 26.1%);
+  --color-sidebar-accent: hsl(240 4.8% 95.9%);
+  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --color-sidebar-border: hsl(220 13% 91%);
+  --color-success: hsl(142 76% 36%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-warning: hsl(38 92% 50%);
+  --color-warning-foreground: hsl(0 0% 100%);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(222.2 84% 4.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222.2 84% 4.9%);
+  --primary: hsl(221.2 83.2% 53.3%);
+  --primary-foreground: hsl(210 40% 98%);
+  --secondary: hsl(210 40% 96.1%);
+  --secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --muted: hsl(210 40% 96.1%);
+  --muted-foreground: hsl(215.4 16.3% 46.9%);
+  --accent: hsl(210 40% 96.1%);
+  --accent-foreground: hsl(222.2 47.4% 11.2%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --border: hsl(214.3 31.8% 91.4%);
+  --input: hsl(214.3 31.8% 91.4%);
+  --ring: hsl(221.2 83.2% 53.3%);
+}
+
+* {
+  border-color: var(--border);
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(214.3 31.8% 85%) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: hsl(214.3 31.8% 85%);
+  border-radius: 9999px;
+}
+
+/* ECG CLINICAL REPORT PRINT */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: white !important;
+    color: #0f172a !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #ecg-clinical-report,
+  #ecg-clinical-report * {
+    visibility: visible !important;
+  }
+
+  #ecg-clinical-report {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  #ecg-clinical-report header {
+    background: #0f172a !important;
+    color: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #ecg-clinical-report > header {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  #ecg-clinical-report > div {
+    display: block !important;
+    break-inside: auto !important;
+  }
+
+  #ecg-clinical-report section,
+  #ecg-clinical-report aside,
+  #ecg-clinical-report div {
+    break-inside: auto;
+  }
+
+  #ecg-clinical-report .rounded-2xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #ecg-clinical-report button,
+  nav,
+  aside[aria-label],
+  header:not(#ecg-clinical-report header) {
+    display: none !important;
+  }
+
+  #ecg-clinical-report .print\:hidden {
+    display: none !important;
+  }
+
+  #ecg-clinical-report .xl\:grid-cols-\[1\.15fr_0\.85fr\] {
+    grid-template-columns: 1fr !important;
+  }
+
+  #ecg-clinical-report .xl\:border-r {
+    border-right: 0 !important;
+  }
+
+  #ecg-clinical-report p,
+  #ecg-clinical-report span,
+  #ecg-clinical-report dt,
+  #ecg-clinical-report dd {
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
+  }
+
+  #ecg-clinical-report h3 {
+    font-size: 16pt !important;
+  }
+
+  #ecg-clinical-report .text-xl {
+    font-size: 14pt !important;
+  }
+
+  #ecg-clinical-report .text-2xl {
+    font-size: 18pt !important;
+  }
+}
+
+
+/* ECG REPORT PAGINATION POLISH */
+@media print {
+  #ecg-clinical-report {
+    font-size: 9pt !important;
+  }
+
+  #ecg-clinical-report > div {
+    padding: 14px !important;
+  }
+
+  #ecg-clinical-report .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 14px !important;
+  }
+
+  #ecg-clinical-report .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 10px !important;
+  }
+
+  #ecg-clinical-report .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 7px !important;
+  }
+
+  #ecg-clinical-report .p-6 {
+    padding: 14px !important;
+  }
+
+  #ecg-clinical-report .p-5 {
+    padding: 12px !important;
+  }
+
+  #ecg-clinical-report .p-4 {
+    padding: 10px !important;
+  }
+
+  #ecg-clinical-report .h-40 {
+    height: 112px !important;
+  }
+
+  #ecg-clinical-report section > p:first-child,
+  #ecg-clinical-report section > div:first-child {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  #ecg-clinical-report dl,
+  #ecg-clinical-report svg,
+  #ecg-clinical-report .break-inside-avoid {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  #ecg-clinical-report h1,
+  #ecg-clinical-report h2,
+  #ecg-clinical-report h3,
+  #ecg-clinical-report p.font-semibold {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+}

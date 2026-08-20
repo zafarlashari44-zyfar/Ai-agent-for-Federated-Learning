@@ -110,6 +110,30 @@ async def analyse_ecg(
             ),
         ),
     ] = None,
+    waveform_start_sample: Annotated[
+        int | None,
+        Form(
+            ge=0,
+            description="Inclusive sample at which waveform transport starts.",
+        ),
+    ] = None,
+    waveform_stop_sample: Annotated[
+        int | None,
+        Form(
+            gt=0,
+            description="Exclusive sample at which waveform transport stops.",
+        ),
+    ] = None,
+    waveform_downsample_limit: Annotated[
+        int | None,
+        Form(
+            ge=2,
+            description=(
+                "Maximum waveform points returned using min-max "
+                "morphology-preserving downsampling."
+            ),
+        ),
+    ] = 20000,
 ) -> AnalysisResponse:
     """
     Run the complete ECG inference and reasoning pipeline.
@@ -163,6 +187,9 @@ async def analyse_ecg(
             overlay_start_sample=overlay_start_sample,
             overlay_stop_sample=overlay_stop_sample,
             overlay_downsample_limit=overlay_downsample_limit,
+            waveform_start_sample=waveform_start_sample,
+            waveform_stop_sample=waveform_stop_sample,
+            waveform_downsample_limit=waveform_downsample_limit,
         )
     finally:
         await file.close()
