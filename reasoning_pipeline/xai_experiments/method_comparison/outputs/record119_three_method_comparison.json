@@ -1,0 +1,1433 @@
+{
+  "experiment": "gradcam_shap_lime_comparison",
+  "record": "119",
+  "lead": "MLII",
+  "sampling_rate_hz": 360.0,
+  "num_valid_beats": 1987,
+  "num_evaluated_beats": 20,
+  "selected_beat_indices": [
+    0,
+    104,
+    209,
+    313,
+    418,
+    522,
+    627,
+    731,
+    836,
+    940,
+    1045,
+    1149,
+    1254,
+    1358,
+    1463,
+    1567,
+    1672,
+    1776,
+    1881,
+    1986
+  ],
+  "common_regions": 54,
+  "lime_configuration": {
+    "num_samples": 2500,
+    "mask_probability": 0.01,
+    "random_state": 42,
+    "guaranteed_nonempty_perturbation": true
+  },
+  "pairwise_summary": {
+    "gradcam_vs_shap": {
+      "pearson": 0.10182576063216779,
+      "spearman": 0.07725795740791368,
+      "top_10_overlap": 0.27,
+      "top_10_iou": 0.18670634920634918,
+      "top_20_overlap": 0.34090909090909083,
+      "top_20_iou": 0.2374509803921568,
+      "peak_distance_regions": 5.3
+    },
+    "gradcam_vs_lime": {
+      "pearson": -0.022114811259255057,
+      "spearman": -0.009809405936451802,
+      "top_10_overlap": 0.33,
+      "top_10_iou": 0.2121031746031746,
+      "top_20_overlap": 0.2909090909090909,
+      "top_20_iou": 0.18314192343604108,
+      "peak_distance_regions": 4.6
+    },
+    "shap_vs_lime": {
+      "pearson": 0.3215106669423672,
+      "spearman": 0.2593291404612159,
+      "top_10_overlap": 0.35,
+      "top_10_iou": 0.2299603174603174,
+      "top_20_overlap": 0.4636363636363637,
+      "top_20_iou": 0.3166545653349059,
+      "peak_distance_regions": 2.4
+    }
+  },
+  "faithfulness_summary": {
+    "gradcam": {
+      "remove_top_10_probability": 0.63929925209668,
+      "remove_top_10_drop": 0.3304051404556958,
+      "remove_top_20_probability": 0.47104065960174923,
+      "remove_top_20_drop": 0.4986637329506266
+    },
+    "shap": {
+      "remove_top_10_probability": 0.548860849785888,
+      "remove_top_10_drop": 0.4208435427664877,
+      "remove_top_20_probability": 0.5497819757177232,
+      "remove_top_20_drop": 0.41992241683465253
+    },
+    "lime": {
+      "remove_top_10_probability": 0.425002936713139,
+      "remove_top_10_drop": 0.5447014558392368,
+      "remove_top_20_probability": 0.5035098786698654,
+      "remove_top_20_drop": 0.4661945138825104
+    }
+  },
+  "runtime_summary_seconds": {
+    "gradcam": 0.006732625397853553,
+    "shap": 0.30804915034823355,
+    "lime": 0.24947822310205084
+  },
+  "beats": [
+    {
+      "beat_index": 0,
+      "r_peak_sample": 309,
+      "r_peak_time_seconds": 0.8583333333333333,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.996607780456543,
+      "runtime_seconds": {
+        "gradcam": 0.08622772397939116,
+        "shap": 0.2912858649797272,
+        "lime": 0.3109765750123188
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.21602391637408486,
+          "spearman": 0.45903544594291046,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.10390509771098104,
+          "spearman": 0.16595031440338062,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.05706803542957105,
+          "spearman": 0.25648942252715834,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998441934585571,
+          "remove_top_10_drop": -0.00323641300201416,
+          "remove_top_20_probability": 0.8910027146339417,
+          "remove_top_20_drop": 0.10560506582260132
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9982966780662537,
+          "remove_top_10_drop": -0.0016888976097106934,
+          "remove_top_20_probability": 0.9998143315315247,
+          "remove_top_20_drop": -0.0032065510749816895
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9997580647468567,
+          "remove_top_10_drop": -0.0031502842903137207,
+          "remove_top_20_probability": 0.9998980760574341,
+          "remove_top_20_drop": -0.0032902956008911133
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 104,
+      "r_peak_sample": 34657,
+      "r_peak_time_seconds": 96.26944444444445,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9972315430641174,
+      "runtime_seconds": {
+        "gradcam": 0.0029970020113978535,
+        "shap": 0.3081724689982366,
+        "lime": 0.2660317989939358
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.4382797306881355,
+          "spearman": 0.4850369034597098,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.7272727272727273,
+          "top_20_iou": 0.5714285714285714,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.0959606060630469,
+          "spearman": 0.11380044292636386,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.36363636363636365,
+          "top_20_iou": 0.2222222222222222,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.048957346684552074,
+          "spearman": 0.27661520869068035,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.2727272727272727,
+          "top_20_iou": 0.15789473684210525,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998871088027954,
+          "remove_top_10_drop": -0.0026555657386779785,
+          "remove_top_20_probability": 0.5713841319084167,
+          "remove_top_20_drop": 0.4258474111557007
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9987902045249939,
+          "remove_top_10_drop": -0.0015586614608764648,
+          "remove_top_20_probability": 0.9999746084213257,
+          "remove_top_20_drop": -0.002743065357208252
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9999325275421143,
+          "remove_top_10_drop": -0.002700984477996826,
+          "remove_top_20_probability": 0.9998929500579834,
+          "remove_top_20_drop": -0.002661406993865967
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 209,
+      "r_peak_sample": 69121,
+      "r_peak_time_seconds": 192.00277777777777,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9345020651817322,
+      "runtime_seconds": {
+        "gradcam": 0.0026443989772815257,
+        "shap": 0.3081660439784173,
+        "lime": 0.24057862398331054
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.30908057125261157,
+          "spearman": -0.4228320945302077,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.22473795382794312,
+          "spearman": -0.14991423670668952,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6295853474842112,
+          "spearman": 0.3765580331618067,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.0006860941066406667,
+          "remove_top_10_drop": 0.9338159710750915,
+          "remove_top_20_probability": 0.0003378869441803545,
+          "remove_top_20_drop": 0.9341641782375518
+        },
+        "shap": {
+          "remove_top_10_probability": 1.706439860527098e-07,
+          "remove_top_10_drop": 0.9345018945377461,
+          "remove_top_20_probability": 0.0001494231983087957,
+          "remove_top_20_drop": 0.9343526419834234
+        },
+        "lime": {
+          "remove_top_10_probability": 2.859712822100846e-06,
+          "remove_top_10_drop": 0.9344992054689101,
+          "remove_top_20_probability": 0.061097536236047745,
+          "remove_top_20_drop": 0.8734045289456844
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 313,
+      "r_peak_sample": 103662,
+      "r_peak_time_seconds": 287.95,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9536918997764587,
+      "runtime_seconds": {
+        "gradcam": 0.002565319009590894,
+        "shap": 0.3046029139950406,
+        "lime": 0.23213119301362894
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.572546788881551,
+          "spearman": -0.5479739275636583,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.0,
+          "top_20_iou": 0.0,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.5537099004600645,
+          "spearman": -0.25742385619738334,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6672589551597703,
+          "spearman": 0.36093005526967786,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9057483077049255,
+          "remove_top_10_drop": 0.0479435920715332,
+          "remove_top_20_probability": 0.09026854485273361,
+          "remove_top_20_drop": 0.8634233549237251
+        },
+        "shap": {
+          "remove_top_10_probability": 2.435901080843905e-07,
+          "remove_top_10_drop": 0.9536916561863507,
+          "remove_top_20_probability": 0.001281951554119587,
+          "remove_top_20_drop": 0.9524099482223392
+        },
+        "lime": {
+          "remove_top_10_probability": 0.0010695290984585881,
+          "remove_top_10_drop": 0.9526223706780002,
+          "remove_top_20_probability": 0.028623972088098526,
+          "remove_top_20_drop": 0.9250679276883602
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 418,
+      "r_peak_sample": 137562,
+      "r_peak_time_seconds": 382.1166666666667,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9496351480484009,
+      "runtime_seconds": {
+        "gradcam": 0.002924870001152158,
+        "shap": 0.3051963329780847,
+        "lime": 0.22963213399634697
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.5186354218589874,
+          "spearman": -0.46507461557170704,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.0,
+          "top_20_iou": 0.0,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.5124638154488685,
+          "spearman": -0.32011282858545986,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6581330202653296,
+          "spearman": 0.40514579759862773,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.8808248043060303,
+          "remove_top_10_drop": 0.0688103437423706,
+          "remove_top_20_probability": 0.32056277990341187,
+          "remove_top_20_drop": 0.629072368144989
+        },
+        "shap": {
+          "remove_top_10_probability": 8.901748742573545e-07,
+          "remove_top_10_drop": 0.9496342578735266,
+          "remove_top_20_probability": 0.0019953029695898294,
+          "remove_top_20_drop": 0.947639845078811
+        },
+        "lime": {
+          "remove_top_10_probability": 0.0012614530278369784,
+          "remove_top_10_drop": 0.9483736950205639,
+          "remove_top_20_probability": 0.017065202817320824,
+          "remove_top_20_drop": 0.93256994523108
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 522,
+      "r_peak_sample": 171527,
+      "r_peak_time_seconds": 476.4638888888889,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.993370532989502,
+      "runtime_seconds": {
+        "gradcam": 0.002614334982354194,
+        "shap": 0.309165340004256,
+        "lime": 0.23488027800340205
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.32771462028102183,
+          "spearman": 0.3135017815325052,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.27039759184103707,
+          "spearman": 0.2213126455508545,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.36363636363636365,
+          "top_20_iou": 0.2222222222222222,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.0025430920546037697,
+          "spearman": 0.08915570802363253,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.36363636363636365,
+          "top_20_iou": 0.2222222222222222,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.999658465385437,
+          "remove_top_10_drop": -0.006287932395935059,
+          "remove_top_20_probability": 0.9941996335983276,
+          "remove_top_20_drop": -0.0008291006088256836
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9978700876235962,
+          "remove_top_10_drop": -0.004499554634094238,
+          "remove_top_20_probability": 0.9999771118164062,
+          "remove_top_20_drop": -0.006606578826904297
+        },
+        "lime": {
+          "remove_top_10_probability": 0.3381236493587494,
+          "remove_top_10_drop": 0.6552468836307526,
+          "remove_top_20_probability": 0.87144935131073,
+          "remove_top_20_drop": 0.12192118167877197
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 627,
+      "r_peak_sample": 205553,
+      "r_peak_time_seconds": 570.9805555555556,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.93980473279953,
+      "runtime_seconds": {
+        "gradcam": 0.0025173219910357147,
+        "shap": 0.2987442900193855,
+        "lime": 0.23289957200177014
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.20250439548472213,
+          "spearman": -0.23575376405565082,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.22377128559060525,
+          "spearman": -0.34088050314465407,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6672173955285308,
+          "spearman": 0.39775109586430335,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.0007570434245280921,
+          "remove_top_10_drop": 0.9390476893750019,
+          "remove_top_20_probability": 0.00016550711006857455,
+          "remove_top_20_drop": 0.9396392256894615
+        },
+        "shap": {
+          "remove_top_10_probability": 6.700717563035141e-07,
+          "remove_top_10_drop": 0.9398040627277737,
+          "remove_top_20_probability": 1.1572620906008524e-07,
+          "remove_top_20_drop": 0.939804617073321
+        },
+        "lime": {
+          "remove_top_10_probability": 0.000948832428548485,
+          "remove_top_10_drop": 0.9388559003709815,
+          "remove_top_20_probability": 0.017433317378163338,
+          "remove_top_20_drop": 0.9223714154213667
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 731,
+      "r_peak_sample": 239791,
+      "r_peak_time_seconds": 666.0861111111111,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9979222416877747,
+      "runtime_seconds": {
+        "gradcam": 0.0025966120010707527,
+        "shap": 0.3111528970184736,
+        "lime": 0.2537988609983586
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.689487631728046,
+          "spearman": 0.5595484931560248,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.7272727272727273,
+          "top_20_iou": 0.5714285714285714,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.15568019157675556,
+          "spearman": 0.2343608049725162,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.09564100796351518,
+          "spearman": 0.3026110158185629,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9985373020172119,
+          "remove_top_10_drop": -0.0006150603294372559,
+          "remove_top_20_probability": 0.5352326035499573,
+          "remove_top_20_drop": 0.4626896381378174
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9991508722305298,
+          "remove_top_10_drop": -0.001228630542755127,
+          "remove_top_20_probability": 0.9984468817710876,
+          "remove_top_20_drop": -0.0005246400833129883
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9997232556343079,
+          "remove_top_10_drop": -0.0018010139465332031,
+          "remove_top_20_probability": 0.9999935626983643,
+          "remove_top_20_drop": -0.0020713210105895996
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 836,
+      "r_peak_sample": 274261,
+      "r_peak_time_seconds": 761.8361111111111,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9925659894943237,
+      "runtime_seconds": {
+        "gradcam": 0.002073167997878045,
+        "shap": 0.2928443589771632,
+        "lime": 0.2296114960045088
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.295239989172606,
+          "spearman": 0.2657043568897895,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 4
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.28055490899386243,
+          "spearman": 0.22366141334656534,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.36363636363636365,
+          "top_20_iou": 0.2222222222222222,
+          "peak_distance_regions": 1
+        },
+        "shap_vs_lime": {
+          "pearson": -0.1487526500946365,
+          "spearman": -0.027863541071088238,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9996774196624756,
+          "remove_top_10_drop": -0.0071114301681518555,
+          "remove_top_20_probability": 0.9945563077926636,
+          "remove_top_20_drop": -0.0019903182983398438
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9964806437492371,
+          "remove_top_10_drop": -0.00391465425491333,
+          "remove_top_20_probability": 0.9999510049819946,
+          "remove_top_20_drop": -0.0073850154876708984
+        },
+        "lime": {
+          "remove_top_10_probability": 0.3042491376399994,
+          "remove_top_10_drop": 0.6883168518543243,
+          "remove_top_20_probability": 0.8881838917732239,
+          "remove_top_20_drop": 0.10438209772109985
+        }
+      },
+      "peak_regions": {
+        "gradcam": 16,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 940,
+      "r_peak_sample": 308499,
+      "r_peak_time_seconds": 856.9416666666667,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9944349527359009,
+      "runtime_seconds": {
+        "gradcam": 0.0023795580200385302,
+        "shap": 0.333987916004844,
+        "lime": 0.26115697700879537
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.41604466913421423,
+          "spearman": 0.38678333675868365,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.18652315982441864,
+          "spearman": 0.28472937603504733,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": -0.047824547125013585,
+          "spearman": 0.24070897655803314,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.2727272727272727,
+          "top_20_iou": 0.15789473684210525,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998557567596436,
+          "remove_top_10_drop": -0.005420804023742676,
+          "remove_top_20_probability": 0.8892731666564941,
+          "remove_top_20_drop": 0.10516178607940674
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9989010095596313,
+          "remove_top_10_drop": -0.004466056823730469,
+          "remove_top_20_probability": 0.9999953508377075,
+          "remove_top_20_drop": -0.005560398101806641
+        },
+        "lime": {
+          "remove_top_10_probability": 0.99763023853302,
+          "remove_top_10_drop": -0.0031952857971191406,
+          "remove_top_20_probability": 0.5733563303947449,
+          "remove_top_20_drop": 0.421078622341156
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 1045,
+      "r_peak_sample": 342786,
+      "r_peak_time_seconds": 952.1833333333333,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.946333646774292,
+      "runtime_seconds": {
+        "gradcam": 0.0024558200093451887,
+        "shap": 0.32888422699761577,
+        "lime": 0.27139697899110615
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.25478140217317446,
+          "spearman": -0.30024776062511904,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.24187988943575653,
+          "spearman": -0.30123880312559553,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6730098530084271,
+          "spearman": 0.3664189060415475,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.0009407948818989098,
+          "remove_top_10_drop": 0.9453928518923931,
+          "remove_top_20_probability": 0.0010228591272607446,
+          "remove_top_20_drop": 0.9453107876470312
+        },
+        "shap": {
+          "remove_top_10_probability": 7.511462740694697e-07,
+          "remove_top_10_drop": 0.9463328956280179,
+          "remove_top_20_probability": 0.0001553359325043857,
+          "remove_top_20_drop": 0.9461783108417876
+        },
+        "lime": {
+          "remove_top_10_probability": 0.0009630837012082338,
+          "remove_top_10_drop": 0.9453705630730838,
+          "remove_top_20_probability": 0.00986490584909916,
+          "remove_top_20_drop": 0.9364687409251928
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 1149,
+      "r_peak_sample": 376754,
+      "r_peak_time_seconds": 1046.5388888888888,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9310319423675537,
+      "runtime_seconds": {
+        "gradcam": 0.002476220019161701,
+        "shap": 0.3113720979890786,
+        "lime": 0.23539780301507562
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.24080998471448656,
+          "spearman": -0.3222031637125976,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.2657122560763776,
+          "spearman": -0.3530779493043643,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6309758692305599,
+          "spearman": 0.34370116256908706,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.7272727272727273,
+          "top_20_iou": 0.5714285714285714,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.00036932717193849385,
+          "remove_top_10_drop": 0.9306626151956152,
+          "remove_top_20_probability": 0.00026544585125520825,
+          "remove_top_20_drop": 0.9307664965162985
+        },
+        "shap": {
+          "remove_top_10_probability": 8.411885801251628e-07,
+          "remove_top_10_drop": 0.9310311011789736,
+          "remove_top_20_probability": 4.826229542231886e-06,
+          "remove_top_20_drop": 0.9310271161380115
+        },
+        "lime": {
+          "remove_top_10_probability": 0.0012397386599332094,
+          "remove_top_10_drop": 0.9297922037076205,
+          "remove_top_20_probability": 0.024704448878765106,
+          "remove_top_20_drop": 0.9063274934887886
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 1254,
+      "r_peak_sample": 411119,
+      "r_peak_time_seconds": 1141.9972222222223,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.994939923286438,
+      "runtime_seconds": {
+        "gradcam": 0.002448854997055605,
+        "shap": 0.3000064989901148,
+        "lime": 0.24509043601574376
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.17486549563491058,
+          "spearman": 0.3682971892877739,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.263341885668483,
+          "spearman": 0.3635155700592019,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.020234222202218093,
+          "spearman": 0.15395464074709356,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998145699501038,
+          "remove_top_10_drop": -0.0048746466636657715,
+          "remove_top_20_probability": 0.9798638820648193,
+          "remove_top_20_drop": 0.015076041221618652
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9997851252555847,
+          "remove_top_10_drop": -0.0048452019691467285,
+          "remove_top_20_probability": 0.9999722242355347,
+          "remove_top_20_drop": -0.00503230094909668
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9965477585792542,
+          "remove_top_10_drop": -0.0016078352928161621,
+          "remove_top_20_probability": 0.9992559552192688,
+          "remove_top_20_drop": -0.0043160319328308105
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 1358,
+      "r_peak_sample": 442700,
+      "r_peak_time_seconds": 1229.7222222222222,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9973757266998291,
+      "runtime_seconds": {
+        "gradcam": 0.003308043989818543,
+        "shap": 0.2978054460254498,
+        "lime": 0.23099651801749133
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.657325462226028,
+          "spearman": 0.6909857175452955,
+          "top_10_overlap": 0.8,
+          "top_10_iou": 0.6666666666666666,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.20998732024604846,
+          "spearman": 0.2610955226943864,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.15658862576865823,
+          "spearman": 0.20937678673527726,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998915195465088,
+          "remove_top_10_drop": -0.0025157928466796875,
+          "remove_top_20_probability": 0.5145876407623291,
+          "remove_top_20_drop": 0.4827880859375
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9998288154602051,
+          "remove_top_10_drop": -0.0024530887603759766,
+          "remove_top_20_probability": 0.9994726777076721,
+          "remove_top_20_drop": -0.0020969510078430176
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9820165038108826,
+          "remove_top_10_drop": 0.015359222888946533,
+          "remove_top_20_probability": 0.9930903315544128,
+          "remove_top_20_drop": 0.00428539514541626
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 1463,
+      "r_peak_sample": 477902,
+      "r_peak_time_seconds": 1327.5055555555555,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9967868328094482,
+      "runtime_seconds": {
+        "gradcam": 0.002477836998878047,
+        "shap": 0.29108069802168757,
+        "lime": 0.2506345580040943
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.5638202227720277,
+          "spearman": 0.5072779160525259,
+          "top_10_overlap": 0.8,
+          "top_10_iou": 0.6666666666666666,
+          "top_20_overlap": 0.6363636363636364,
+          "top_20_iou": 0.4666666666666667,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.20737631181147162,
+          "spearman": 0.2867081697454372,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": 0.12708444423631574,
+          "spearman": 0.19916142557651992,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9998106360435486,
+          "remove_top_10_drop": -0.003023803234100342,
+          "remove_top_20_probability": 0.6597797274589539,
+          "remove_top_20_drop": 0.3370071053504944
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9984311461448669,
+          "remove_top_10_drop": -0.0016443133354187012,
+          "remove_top_20_probability": 0.9998124241828918,
+          "remove_top_20_drop": -0.0030255913734436035
+        },
+        "lime": {
+          "remove_top_10_probability": 0.9841406345367432,
+          "remove_top_10_drop": 0.012646198272705078,
+          "remove_top_20_probability": 0.9987877011299133,
+          "remove_top_20_drop": -0.002000868320465088
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 1567,
+      "r_peak_sample": 511935,
+      "r_peak_time_seconds": 1422.0416666666667,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9322274923324585,
+      "runtime_seconds": {
+        "gradcam": 0.002318720013136044,
+        "shap": 0.31009736697888,
+        "lime": 0.2526035800110549
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.2841526607092636,
+          "spearman": -0.3072612921669525,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.0,
+          "top_20_iou": 0.0,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.28289096523651425,
+          "spearman": -0.43510577472841616,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6434424787005263,
+          "spearman": 0.35079092814941865,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.00029724391060881317,
+          "remove_top_10_drop": 0.9319302484218497,
+          "remove_top_20_probability": 0.0002064617583528161,
+          "remove_top_20_drop": 0.9320210305741057
+        },
+        "shap": {
+          "remove_top_10_probability": 1.1986954007170425e-07,
+          "remove_top_10_drop": 0.9322273724629184,
+          "remove_top_20_probability": 4.353628924036457e-08,
+          "remove_top_20_drop": 0.9322274487961693
+        },
+        "lime": {
+          "remove_top_10_probability": 1.8469557971911854e-06,
+          "remove_top_10_drop": 0.9322256453766613,
+          "remove_top_20_probability": 0.04770159348845482,
+          "remove_top_20_drop": 0.8845258988440037
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 1672,
+      "r_peak_sample": 546871,
+      "r_peak_time_seconds": 1519.0861111111112,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9136053919792175,
+      "runtime_seconds": {
+        "gradcam": 0.0027494739915709943,
+        "shap": 0.3030361130076926,
+        "lime": 0.24884544100495987
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.3551761708616543,
+          "spearman": -0.3516295025728987,
+          "top_10_overlap": 0.0,
+          "top_10_iou": 0.0,
+          "top_20_overlap": 0.0,
+          "top_20_iou": 0.0,
+          "peak_distance_regions": 7
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.35313414130823284,
+          "spearman": -0.40971983990851907,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.09090909090909091,
+          "top_20_iou": 0.047619047619047616,
+          "peak_distance_regions": 9
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6099477090958075,
+          "spearman": 0.3748046502763483,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.0003218671481590718,
+          "remove_top_10_drop": 0.9132835248310585,
+          "remove_top_20_probability": 0.00015433653607033193,
+          "remove_top_20_drop": 0.9134510554431472
+        },
+        "shap": {
+          "remove_top_10_probability": 1.0587050525145969e-07,
+          "remove_top_10_drop": 0.9136052861087123,
+          "remove_top_20_probability": 5.528928070930306e-08,
+          "remove_top_20_drop": 0.9136053366899368
+        },
+        "lime": {
+          "remove_top_10_probability": 0.001860438846051693,
+          "remove_top_10_drop": 0.9117449531331658,
+          "remove_top_20_probability": 0.07785017043352127,
+          "remove_top_20_drop": 0.8357552215456963
+        }
+      },
+      "peak_regions": {
+        "gradcam": 27,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 1776,
+      "r_peak_sample": 579064,
+      "r_peak_time_seconds": 1608.5111111111112,
+      "predicted_class": 2,
+      "predicted_label": "V",
+      "confidence": 0.9431514739990234,
+      "runtime_seconds": {
+        "gradcam": 0.0023248099896591157,
+        "shap": 0.2950959920126479,
+        "lime": 0.2453697619785089
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": -0.14297806579958264,
+          "spearman": -0.31518963217076423,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 1
+        },
+        "gradcam_vs_lime": {
+          "pearson": -0.2723637986399641,
+          "spearman": -0.4024776062511911,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.18181818181818182,
+          "top_20_iou": 0.1,
+          "peak_distance_regions": 1
+        },
+        "shap_vs_lime": {
+          "pearson": 0.6418529801622304,
+          "spearman": 0.25313512483323797,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 2
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 7.085982360877097e-05,
+          "remove_top_10_drop": 0.9430806141754147,
+          "remove_top_20_probability": 5.8533598348731175e-05,
+          "remove_top_20_drop": 0.9430929404006747
+        },
+        "shap": {
+          "remove_top_10_probability": 7.145108611439355e-07,
+          "remove_top_10_drop": 0.9431507594881623,
+          "remove_top_20_probability": 2.4043682600449756e-08,
+          "remove_top_20_drop": 0.9431514499553408
+        },
+        "lime": {
+          "remove_top_10_probability": 0.0008967557223513722,
+          "remove_top_10_drop": 0.9422547182766721,
+          "remove_top_20_probability": 0.003887892235070467,
+          "remove_top_20_drop": 0.939263581763953
+        }
+      },
+      "peak_regions": {
+        "gradcam": 19,
+        "shap": 20,
+        "lime": 18
+      }
+    },
+    {
+      "beat_index": 1881,
+      "r_peak_sample": 614561,
+      "r_peak_time_seconds": 1707.1138888888888,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9948293566703796,
+      "runtime_seconds": {
+        "gradcam": 0.0025850909878499806,
+        "shap": 0.3168162500078324,
+        "lime": 0.2705710169975646
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.45281512728502327,
+          "spearman": 0.3000606701788584,
+          "top_10_overlap": 0.4,
+          "top_10_iou": 0.25,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 5
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.20734944452064005,
+          "spearman": 0.22102331704775677,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.36363636363636365,
+          "top_20_iou": 0.2222222222222222,
+          "peak_distance_regions": 2
+        },
+        "shap_vs_lime": {
+          "pearson": -0.1005821685812952,
+          "spearman": 0.0389937106918239,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.2727272727272727,
+          "top_20_iou": 0.15789473684210525,
+          "peak_distance_regions": 3
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9997430443763733,
+          "remove_top_10_drop": -0.004913687705993652,
+          "remove_top_20_probability": 0.9952211976051331,
+          "remove_top_20_drop": -0.00039184093475341797
+        },
+        "shap": {
+          "remove_top_10_probability": 0.9987978935241699,
+          "remove_top_10_drop": -0.003968536853790283,
+          "remove_top_20_probability": 0.9999035596847534,
+          "remove_top_20_drop": -0.005074203014373779
+        },
+        "lime": {
+          "remove_top_10_probability": 0.2648125886917114,
+          "remove_top_10_drop": 0.7300167679786682,
+          "remove_top_20_probability": 0.5612612366676331,
+          "remove_top_20_drop": 0.4335681200027466
+        }
+      },
+      "peak_regions": {
+        "gradcam": 15,
+        "shap": 20,
+        "lime": 17
+      }
+    },
+    {
+      "beat_index": 1986,
+      "r_peak_sample": 649788,
+      "r_peak_time_seconds": 1804.9666666666667,
+      "predicted_class": 0,
+      "predicted_label": "N",
+      "confidence": 0.9940391778945923,
+      "runtime_seconds": {
+        "gradcam": 0.001967327989405021,
+        "shap": 0.34346988998004235,
+        "lime": 0.2469608589890413
+      },
+      "pairwise_agreement": {
+        "gradcam_vs_shap": {
+          "pearson": 0.6855638090832916,
+          "spearman": 0.4770930903237529,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 0
+        },
+        "gradcam_vs_lime": {
+          "pearson": 0.5072912625824807,
+          "spearman": 0.39760570244172694,
+          "top_10_overlap": 0.6,
+          "top_10_iou": 0.42857142857142855,
+          "top_20_overlap": 0.5454545454545454,
+          "top_20_iou": 0.375,
+          "peak_distance_regions": 0
+        },
+        "shap_vs_lime": {
+          "pearson": 0.39783232167346183,
+          "spearman": 0.21814370116256904,
+          "top_10_overlap": 0.2,
+          "top_10_iou": 0.1111111111111111,
+          "top_20_overlap": 0.45454545454545453,
+          "top_20_iou": 0.29411764705882354,
+          "peak_distance_regions": 0
+        }
+      },
+      "faithfulness": {
+        "gradcam": {
+          "remove_top_10_probability": 0.9992486834526062,
+          "remove_top_10_drop": -0.005209505558013916,
+          "remove_top_20_probability": 0.9826698303222656,
+          "remove_top_20_drop": 0.01136934757232666
+        },
+        "shap": {
+          "remove_top_10_probability": 0.990880012512207,
+          "remove_top_10_drop": 0.003159165382385254,
+          "remove_top_20_probability": 0.9947322607040405,
+          "remove_top_20_drop": -0.0006930828094482422
+        },
+        "lime": {
+          "remove_top_10_probability": 0.6248798370361328,
+          "remove_top_10_drop": 0.3691593408584595,
+          "remove_top_20_probability": 0.8967991471290588,
+          "remove_top_20_drop": 0.09724003076553345
+        }
+      },
+      "peak_regions": {
+        "gradcam": 53,
+        "shap": 53,
+        "lime": 53
+      }
+    }
+  ]
+}

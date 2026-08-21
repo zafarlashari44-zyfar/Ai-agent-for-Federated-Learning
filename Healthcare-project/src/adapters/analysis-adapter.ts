@@ -119,6 +119,31 @@ function buildWaveformPoints(
   );
 }
 
+function mapAttributionMethod(
+  methodId: string,
+): AttributionMethod {
+  if (
+    methodId === "grad-cam" ||
+    methodId === "grad-cam-1d"
+  ) {
+    return "grad-cam";
+  }
+
+  if (
+    methodId === "shap" ||
+    methodId === "shap-gradient-1d"
+  ) {
+    return "shap";
+  }
+
+  if (methodId === "integrated-gradients") {
+    return "integrated-gradients";
+  }
+
+  return "saliency";
+}
+
+
 function buildAttributionRegions(
   response: AnalysisResponse,
 ): AttributionRegion[] {
@@ -130,14 +155,9 @@ function buildAttributionRegions(
 
   const safeOverlay = overlay;
 
-  const method =
-    safeOverlay.method_id === "grad-cam"
-      ? "grad-cam"
-      : safeOverlay.method_id === "integrated-gradients"
-        ? "integrated-gradients"
-        : safeOverlay.method_id === "shap"
-          ? "shap"
-          : "saliency";
+  const method = mapAttributionMethod(
+    safeOverlay.method_id,
+  );
 
   const regions: AttributionRegion[] = [];
   const threshold = 0.35;
@@ -243,15 +263,9 @@ function buildSegmentedBeats(
             return [
               {
                 id: `beat-${beat.beat_index}-map-${mapIndex}`,
-                method:
-                  attributionMap.method_id === "grad-cam"
-                    ? "grad-cam"
-                    : attributionMap.method_id ===
-                        "integrated-gradients"
-                      ? "integrated-gradients"
-                      : attributionMap.method_id === "shap"
-                        ? "shap"
-                        : "saliency",
+                method: mapAttributionMethod(
+                  attributionMap.method_id,
+                ),
                 startSample:
                   attributionMap.source_start_sample_index,
                 endSample:

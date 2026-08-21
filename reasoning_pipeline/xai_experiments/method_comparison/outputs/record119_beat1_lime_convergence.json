@@ -1,0 +1,109 @@
+{
+  "experiment": "lime_sample_convergence",
+  "dataset": "MIT-BIH Arrhythmia Database",
+  "record": "119",
+  "lead": "MLII",
+  "beat_index": 1,
+  "prediction": "V",
+  "confidence": 0.9438331723213196,
+  "masking_value": 0.0,
+  "num_regions": 54,
+  "results": [
+    {
+      "num_samples": 1000,
+      "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "strongest_regions": [
+        40,
+        28,
+        49,
+        39,
+        45
+      ],
+      "mean_runtime_seconds": 0.1327573731949087,
+      "mean_pearson": 0.031111057614907622,
+      "minimum_pearson": -0.26204636693000793,
+      "mean_spearman": 0.034960930055269686,
+      "minimum_spearman": -0.27981703830760435,
+      "mean_top_10_overlap": 0.08,
+      "mean_top_20_overlap": 0.20909090909090908
+    },
+    {
+      "num_samples": 2500,
+      "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "strongest_regions": [
+        35,
+        21,
+        49,
+        37,
+        40
+      ],
+      "mean_runtime_seconds": 0.31348888821084986,
+      "mean_pearson": 0.08517486657947301,
+      "minimum_pearson": -0.20354631543159485,
+      "mean_spearman": 0.07772060224890413,
+      "minimum_spearman": -0.2415475509815132,
+      "mean_top_10_overlap": 0.14,
+      "mean_top_20_overlap": 0.22727272727272724
+    },
+    {
+      "num_samples": 5000,
+      "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "strongest_regions": [
+        11,
+        47,
+        43,
+        21,
+        40
+      ],
+      "mean_runtime_seconds": 0.7389305524062365,
+      "mean_pearson": 0.06536223143339157,
+      "minimum_pearson": -0.2862826883792877,
+      "mean_spearman": 0.04083857442348008,
+      "minimum_spearman": -0.29674099485420236,
+      "mean_top_10_overlap": 0.16,
+      "mean_top_20_overlap": 0.22727272727272724
+    },
+    {
+      "num_samples": 10000,
+      "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "strongest_regions": [
+        19,
+        0,
+        16,
+        21,
+        51
+      ],
+      "mean_runtime_seconds": 1.8692416139994747,
+      "mean_pearson": 0.0730233957991004,
+      "minimum_pearson": -0.2148878574371338,
+      "mean_spearman": 0.06444063274251952,
+      "minimum_spearman": -0.15814751286449397,
+      "mean_top_10_overlap": 0.08,
+      "mean_top_20_overlap": 0.17272727272727276
+    }
+  ]
+}

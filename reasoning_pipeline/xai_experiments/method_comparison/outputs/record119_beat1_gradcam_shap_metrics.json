@@ -1,0 +1,49 @@
+{
+  "experiment": {
+    "name": "gradcam_vs_shap",
+    "common_resolution_regions": 54,
+    "samples_per_region": 4
+  },
+  "record": {
+    "dataset": "MIT-BIH Arrhythmia Database",
+    "record": "119",
+    "lead": "MLII",
+    "sampling_rate_hz": 360.0,
+    "signal_samples": 650000,
+    "duration_minutes": 30.092592592592595,
+    "detected_r_peaks": 1988,
+    "valid_beats": 1987
+  },
+  "beat": {
+    "beat_index": 1,
+    "r_peak_sample": 505,
+    "r_peak_time_seconds": 1.4027777777777777,
+    "input_length": 216
+  },
+  "prediction": {
+    "class_index": 2,
+    "label": "V",
+    "confidence": 0.9438331723213196,
+    "model_version": "fedavg-round-10-v1",
+    "checkpoint_hash": "e9119a15cf9bb8b3d15c085e7be4889a49f0649ef27682be03a979d6eba0faa2"
+  },
+  "shap": {
+    "background_size": 50,
+    "minimum": -1.0640249252319336,
+    "maximum": 1.5569454431533813,
+    "mean_absolute_attribution": 0.1278360447719967
+  },
+  "comparison": {
+    "pearson": -0.6322245448384541,
+    "spearman": -0.527196493234229,
+    "top_10_overlap": 0.0,
+    "top_10_iou": 0.0,
+    "top_20_overlap": 0.0,
+    "top_20_iou": 0.0,
+    "gradcam_peak_region": 27,
+    "shap_peak_region": 15,
+    "peak_distance_regions": 12,
+    "peak_distance_samples": 48,
+    "peak_distance_ms": 133.33333333333334
+  }
+}
