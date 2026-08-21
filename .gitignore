@@ -44,3 +44,5 @@ server_app_dump.txt
 training_dump.txt
 
 outputs/orchestration/
+
+!outputs/orchestration/ecg_audit_log.json
