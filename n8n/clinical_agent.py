@@ -6,7 +6,19 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# Core LLM function — UPDATED FOR MULTI-MODAL EHR INGESTION
+# Core LLM function - UPDATED FOR MULTI-MODAL EHR INGESTION
+#
+# CHANGE LOG (this revision):
+#   1. The SHAP attribution values and physiological features are now
+#      interpolated into user_prompt. Previously they were accepted as
+#      parameters but never reached the model, while the system instruction
+#      told the model to reason from them. Any SHAP reasoning in the output
+#      was therefore ungrounded.
+#   2. true_label, correct and risk_flag are deliberately NOT placed in the
+#      prompt. The model must not see ground truth when producing a clinical
+#      briefing. They remain parameters because the batch runner logs them.
+#   3. num_predict caps generation length. This model continues past the JSON
+#      object if left uncapped, which dominated per-request latency.
 # ---------------------------------------------------------------------------
 
 def generate_agent_response(
@@ -18,7 +30,7 @@ def generate_agent_response(
         qrs_direction, p_wave_direction, t_wave_direction,
         rr_variance_proxy, rr_category,
         p_wave_present, t_wave_amplitude, st_elevation, st_flag,
-        ehr_triage_note  # <-- Added parameter here
+        ehr_triage_note
 ):
     system_instruction = """
 You are a highly capable medical AI acting as a communication bridge between a diagnostic model, doctors, and patients' families.
@@ -38,6 +50,10 @@ JSON STRUCTURE:
 }
 """
 
+    # Optional floats may arrive as None from the API layer's NaN handling.
+    t_wave_amp_text = f"{t_wave_amplitude:.4f}" if t_wave_amplitude is not None else "not measured"
+    st_elev_text = f"{st_elevation:.4f}" if st_elevation is not None else "not measured"
+
     user_prompt = f"""
 Patient Clinical Profile for Verification:
 - Patient ID: {patient_id}
@@ -45,6 +61,17 @@ Patient Clinical Profile for Verification:
 - Model Prediction Classification: {prediction} (Confidence: {confidence * 100:.1f}%)
 - Rhythm Context: {rr_category} (Variance proxy: {rr_variance_proxy:.4f})
 - Mathematical Dominance: {dominant_ecg_region}
+
+[SHAP ATTRIBUTION EVIDENCE]
+Signed values indicate direction of contribution; importance indicates magnitude.
+- QRS complex: signed {qrs_shap_signed:.4f}, importance {qrs_importance:.4f}, direction {qrs_direction}
+- P-wave: signed {p_wave_shap_signed:.4f}, importance {p_wave_importance:.4f}, direction {p_wave_direction}
+- T-wave: signed {t_wave_shap_signed:.4f}, importance {t_wave_importance:.4f}, direction {t_wave_direction}
+
+[PHYSIOLOGICAL FEATURES]
+- P-wave present: {p_wave_present}
+- T-wave amplitude: {t_wave_amp_text}
+- ST elevation: {st_elev_text} (flag: {st_flag})
 
 [BIO-BERT VALIDATED EHR CONTEXT]
 - Confirmed Presenting Symptoms / History text: "{ehr_triage_note}"
@@ -60,14 +87,15 @@ Generate the grounded JSON response.
         ],
         format='json',
         options={
-            'temperature': 0.1
+            'temperature': 0.1,
+            'num_predict': 400,
         }
     )
     return response['message']['content']
 
 
 # ---------------------------------------------------------------------------
-# CSV reader — validates all 23 expected columns
+# CSV reader - validates all 23 expected columns
 # ---------------------------------------------------------------------------
 
 def load_csv(csv_path: str) -> pd.DataFrame:
@@ -98,7 +126,7 @@ def load_csv(csv_path: str) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Batch runner — processes every row using all 23 columns
+# Batch runner - processes every row using all 23 columns
 # ---------------------------------------------------------------------------
 
 def run_batch(csv_path: str, split_label: str) -> list:
@@ -111,12 +139,12 @@ def run_batch(csv_path: str, split_label: str) -> list:
         patient_id = str(row["patient_id"])
         prediction = str(row["prediction"])
 
-        # ── UPDATE 1: Extract the new text column safely from the row ──
         ehr_triage_note = str(row.get("ehr_triage_note", "No clinical record history provided."))
 
-        print(f"  [{i+1}/{len(df)}] {patient_id} — {prediction} "
+        print(f"  [{i+1}/{len(df)}] {patient_id} - {prediction} "
               f"[risk: {row['risk_flag']}]", end="", flush=True)
 
+        raw_response = ""
         try:
             raw_response = generate_agent_response(
                 patient_id         = patient_id,
@@ -142,7 +170,7 @@ def run_batch(csv_path: str, split_label: str) -> list:
                 t_wave_amplitude=float(row["t_wave_amplitude"]) if pd.notna(row["t_wave_amplitude"]) else None,
                 st_elevation=float(row["st_elevation"]) if pd.notna(row["st_elevation"]) else None,
                 st_flag            = str(row["st_flag"]),
-                ehr_triage_note=ehr_triage_note,  # Pass the note to the LLM
+                ehr_triage_note=ehr_triage_note,
             )
 
             # Strip any accidental markdown wrapping before JSON parse
@@ -157,10 +185,10 @@ def run_batch(csv_path: str, split_label: str) -> list:
             agent_output = {"error": str(e)}
             status       = "error"
 
-        print(f" → {status}")
+        print(f" -> {status}")
 
         results.append({
-            # ── Identity & prediction ──────────────────────────────
+            # -- Identity & prediction --
             "split":               split_label,
             "patient_id":          patient_id,
             "ecg_lead":            str(row["ecg_lead"]),
@@ -169,7 +197,7 @@ def run_batch(csv_path: str, split_label: str) -> list:
             "confidence":          float(row["confidence"]),
             "correct":             bool(row["correct"]),
             "risk_flag":           str(row["risk_flag"]),
-            # ── SHAP evidence ─────────────────────────────────────
+            # -- SHAP evidence --
             "qrs_shap_signed":     float(row["qrs_shap_signed"]),
             "p_wave_shap_signed":  float(row["p_wave_shap_signed"]),
             "t_wave_shap_signed":  float(row["t_wave_shap_signed"]),
@@ -180,16 +208,16 @@ def run_batch(csv_path: str, split_label: str) -> list:
             "qrs_direction":       str(row["qrs_direction"]),
             "p_wave_direction":    str(row["p_wave_direction"]),
             "t_wave_direction":    str(row["t_wave_direction"]),
-            # ── RR & clinical features ────────────────────────────
+            # -- RR & clinical features --
             "rr_variance_proxy":   float(row["rr_variance_proxy"]),
             "rr_category":         str(row["rr_category"]),
             "p_wave_present":      int(row["p_wave_present"]),
             "t_wave_amplitude":    float(row["t_wave_amplitude"]) if pd.notna(row["t_wave_amplitude"]) else None,
             "st_elevation":        float(row["st_elevation"])     if pd.notna(row["st_elevation"])     else None,
             "st_flag":             str(row["st_flag"]),
-            # ── Log the grounded clinical text context ──
+            # -- Log the grounded clinical text context --
             "ehr_triage_note": ehr_triage_note,
-            # ── Agent output ──────────────────────────────────────
+            # -- Agent output --
             "generated_at":        datetime.utcnow().isoformat() + "Z",
             "status":              status,
             "agent_output":        agent_output,
@@ -206,7 +234,7 @@ def save_json(results: list, path: str) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(results, f, indent=2)
-    print(f"\nJSON saved → {path} ({len(results)} records)")
+    print(f"\nJSON saved -> {path} ({len(results)} records)")
 
 
 def save_csv_flat(results: list, path: str) -> None:
@@ -249,7 +277,7 @@ def save_csv_flat(results: list, path: str) -> None:
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_csv(path, index=False)
-    print(f"CSV saved → {path} ({len(rows)} records)")
+    print(f"CSV saved -> {path} ({len(rows)} records)")
 
 
 # ---------------------------------------------------------------------------
