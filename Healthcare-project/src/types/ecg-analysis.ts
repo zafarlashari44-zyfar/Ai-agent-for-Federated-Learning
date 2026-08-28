@@ -3,7 +3,6 @@
 export type AttributionMethod =
   | "grad-cam"
   | "integrated-gradients"
-  | "shap"
   | "saliency"
   | "none";
 

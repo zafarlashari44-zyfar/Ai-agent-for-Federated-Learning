@@ -188,18 +188,6 @@ function createDemoAnalysis(fileName: string): ECGAnalysisResult {
       description:
         "Moderate attribution around irregular beat timing.",
     },
-    {
-      id: "region-3",
-      method: "shap",
-      startSample: 1470 * SAMPLE_RATE_HZ,
-      endSample: 1485 * SAMPLE_RATE_HZ,
-      startTimeSeconds: 1470,
-      endTimeSeconds: 1485,
-      intensity: 0.57,
-      label: "Morphology contribution",
-      description:
-        "SHAP contribution associated with altered morphology.",
-    },
   ];
 
   const evidence: ClinicalEvidenceItem[] = [
@@ -419,7 +407,7 @@ export function ECGAnalysisWorkspace() {
     useState("Lead II");
 
   const [activeExplanation, setActiveExplanation] = useState<
-    "grad-cam" | "shap" | "integrated-gradients"
+    "grad-cam" | "integrated-gradients"
   >("grad-cam");
 
   const abnormalBeats = useMemo(
@@ -740,7 +728,6 @@ export function ECGAnalysisWorkspace() {
               <div className="flex rounded-xl border bg-slate-50 p-1">
                 {[
                   ["grad-cam", "Grad CAM"],
-                  ["shap", "SHAP"],
                   [
                     "integrated-gradients",
                     "Integrated Gradients",

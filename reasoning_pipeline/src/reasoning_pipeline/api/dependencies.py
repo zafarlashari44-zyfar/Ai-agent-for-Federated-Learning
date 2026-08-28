@@ -34,7 +34,6 @@ from reasoning_pipeline.orchestration.model_input_preparer import (
 
 CHECKPOINT_ENVIRONMENT_VARIABLE = "ECG_CHECKPOINT_PATH"
 DEVICE_ENVIRONMENT_VARIABLE = "ECG_MODEL_DEVICE"
-SHAP_BACKGROUND_ENVIRONMENT_VARIABLE = "ECG_SHAP_BACKGROUND_PATH"
 
 
 @lru_cache(maxsize=1)
@@ -62,29 +61,9 @@ def get_pipeline_service() -> PipelineService:
 
     device = os.getenv(DEVICE_ENVIRONMENT_VARIABLE, "cpu").strip() or "cpu"
 
-    shap_background_value = os.getenv(
-        SHAP_BACKGROUND_ENVIRONMENT_VARIABLE
-    )
-
-    shap_background_path = None
-
-    if shap_background_value is not None and shap_background_value.strip():
-        shap_background_path = (
-            Path(shap_background_value)
-            .expanduser()
-            .resolve()
-        )
-
-        if not shap_background_path.is_file():
-            raise RuntimeError(
-                "Configured SHAP background does not exist: "
-                f"{shap_background_path}"
-            )
-
     pipeline = create_default_pipeline(
         checkpoint_path=checkpoint_path,
         device=device,
-        shap_background_path=shap_background_path,
     )
 
     return PipelineService(

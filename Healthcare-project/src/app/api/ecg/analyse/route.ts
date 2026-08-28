@@ -228,12 +228,6 @@ function buildN8nPayload(
         probabilities,
       ),
 
-    qrs_shap_signed: 0,
-
-    p_wave_shap_signed: 0,
-
-    t_wave_shap_signed: 0,
-
     dominant_ecg_region:
       "QRS",
 

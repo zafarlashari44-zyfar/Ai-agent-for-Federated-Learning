@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI
 
 from reasoning_pipeline.api.error_handlers import register_error_handlers
@@ -9,8 +10,7 @@ API_TITLE = "ECG Reasoning Pipeline API"
 API_DESCRIPTION = (
     "Inference service for evidence-based federated ECG classification, "
     "deterministic clinical reasoning, narrative generation, and "
-    "source-aligned ECG explainability. See docs/frontend-api-integration.md "
-    "for the waveform and attribution contract."
+    "source-aligned GradCAM ECG explainability."
 )
 API_VERSION = "0.1.0"
 

@@ -52,9 +52,6 @@ from reasoning_pipeline.infrastructure.explainability import (
 from reasoning_pipeline.infrastructure.explainability.grad_cam_1d import (
     GradCAM1D,
 )
-from reasoning_pipeline.infrastructure.explainability.shap_1d import (
-    SHAP1D,
-)
 from reasoning_pipeline.infrastructure.explainability.policies import (
     ExplainAbnormalBeatsPolicy,
 )
@@ -374,7 +371,6 @@ def create_default_pipeline(
     *,
     checkpoint_path: str | Path,
     device: str = "cpu",
-    shap_background_path: str | Path | None = None,
 ) -> ECGAnalysisPipeline:
     """
     Construct the production pipeline using the project's default
@@ -388,21 +384,13 @@ def create_default_pipeline(
         device=device,
     )
 
-    explainers = [
+    explainers = (
         GradCAM1D(
             model=classifier.model,
             target_layer=classifier.model.features[8],
             target_layer_name="features.8",
         ),
-    ]
-
-    if shap_background_path is not None:
-        explainers.append(
-            SHAP1D(
-                model=classifier.model,
-                background_path=shap_background_path,
-            )
-        )
+    )
 
     return ECGAnalysisPipeline(
         feature_extractor=feature_extractor,
@@ -413,7 +401,7 @@ def create_default_pipeline(
         report_generator=ReportGenerator(),
         narrative_generator=NarrativeGenerator(),
         explainability_service=ExplainabilityService(
-            explainers=tuple(explainers),
+            explainers=explainers,
             mapper=SourceAttributionMapper(),
             selection_policy=ExplainAbnormalBeatsPolicy(),
         ),

@@ -129,13 +129,6 @@ function mapAttributionMethod(
     return "grad-cam";
   }
 
-  if (
-    methodId === "shap" ||
-    methodId === "shap-gradient-1d"
-  ) {
-    return "shap";
-  }
-
   if (methodId === "integrated-gradients") {
     return "integrated-gradients";
   }
