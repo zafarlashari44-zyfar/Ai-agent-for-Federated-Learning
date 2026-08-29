@@ -1,5 +1,6 @@
 ﻿"use client";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
   Activity,
@@ -380,9 +381,20 @@ type PatientOption = {
   id: string;
   name: string;
   email: string | null;
+  ecg: {
+    demoEcgId: string | null;
+    recordId: string;
+    heaFilename: string | null;
+    datFilename: string | null;
+    dataset: string;
+    mappingType: string;
+  } | null;
 };
 
 export function ECGAnalysisWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const patientFromUrl = searchParams.get("patient");
   const [selectedFiles, setSelectedFiles] =
     useState<File[]>([]);
 
@@ -397,6 +409,20 @@ export function ECGAnalysisWorkspace() {
 
   const [patientLoadError, setPatientLoadError] =
     useState<string | null>(null);
+
+  const [assignedEcgLoading, setAssignedEcgLoading] =
+    useState(false);
+
+  const [assignedEcgError, setAssignedEcgError] =
+    useState<string | null>(null);
+
+  const selectedPatient = useMemo(
+    () =>
+      patients.find(
+        (patient) => patient.id === selectedPatientId,
+      ) ?? null,
+    [patients, selectedPatientId],
+  );
 
   useEffect(() => {
     let active = true;
@@ -545,6 +571,82 @@ export function ECGAnalysisWorkspace() {
     [analysis, selectedBeatIndex],
   );
 
+  async function loadAssignedEcg(patientId: string) {
+    if (!patientId) {
+      setSelectedFiles([]);
+      setAssignedEcgError(null);
+      return;
+    }
+
+    setAssignedEcgLoading(true);
+    setAssignedEcgError(null);
+    setSelectedFiles([]);
+    reset();
+    setSelectedBeatIndex(null);
+
+    try {
+      const response = await fetch(
+        `/api/doctor/ecg-demo-files?patient_id=${encodeURIComponent(patientId)}`,
+        { cache: "no-store" },
+      );
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          body?.error ?? "Unable to load assigned ECG.",
+        );
+      }
+
+      if (
+        !Array.isArray(body.files) ||
+        body.files.length === 0
+      ) {
+        throw new Error(
+          "Assigned ECG contains no files.",
+        );
+      }
+
+      const files: File[] = body.files.map(
+        (item: {
+          name: string;
+          type?: string;
+          base64: string;
+        }) => {
+          const binary = window.atob(item.base64);
+          const bytes = new Uint8Array(binary.length);
+
+          for (
+            let index = 0;
+            index < binary.length;
+            index += 1
+          ) {
+            bytes[index] = binary.charCodeAt(index);
+          }
+
+          return new File(
+            [bytes],
+            item.name,
+            {
+              type:
+                item.type ??
+                "application/octet-stream",
+            },
+          );
+        },
+      );
+
+      setSelectedFiles(files);
+    } catch (loadError) {
+      setAssignedEcgError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to load assigned ECG.",
+      );
+    } finally {
+      setAssignedEcgLoading(false);
+    }
+  }
   function handleFileChange(
     event: ChangeEvent<HTMLInputElement>,
   ) {
@@ -619,9 +721,23 @@ export function ECGAnalysisWorkspace() {
             <select
               id="ecg-patient"
               value={selectedPatientId}
-              onChange={(event) =>
-                setSelectedPatientId(event.target.value)
-              }
+              onChange={(event) => {
+                const patientId = event.target.value;
+
+                setSelectedPatientId(patientId);
+                void loadAssignedEcg(patientId);
+
+                if (patientId) {
+                  router.replace(
+                    `/doctor/reports?patient=${encodeURIComponent(patientId)}`,
+                    { scroll: false },
+                  );
+                } else {
+                  router.replace("/doctor/reports", {
+                    scroll: false,
+                  });
+                }
+              }}
               disabled={patientsLoading}
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
             >
@@ -637,6 +753,9 @@ export function ECGAnalysisWorkspace() {
                   value={patient.id}
                 >
                   {patient.name}
+                  {patient.ecg?.demoEcgId
+                    ? ` — ${patient.ecg.demoEcgId}`
+                    : ""}
                   {patient.email
                     ? ` — ${patient.email}`
                     : ""}
@@ -649,6 +768,42 @@ export function ECGAnalysisWorkspace() {
                 {patientLoadError}
               </p>
             )}
+
+            {selectedPatient?.ecg && (
+              <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                      Assigned demo ECG
+                    </p>
+
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {selectedPatient.ecg.demoEcgId ??
+                        "Demo ECG"}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">
+                      MIT-BIH {selectedPatient.ecg.recordId}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {selectedPatient.ecg.heaFilename}
+                      {selectedPatient.ecg.datFilename
+                        ? ` + ${selectedPatient.ecg.datFilename}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  Research/demo ECG assignment. This does not
+                  represent a clinical identity link to the
+                  original MIT-BIH subject.
+                </p>
+              </div>
+            )}
           </div>
 
           <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
@@ -657,13 +812,19 @@ export function ECGAnalysisWorkspace() {
             </div>
 
             <span className="mt-4 text-lg font-semibold">
-              {selectedFiles.length > 0
-                ? selectedFiles.map((file) => file.name).join(", ")
-                : "Choose an ECG recording"}
+              {assignedEcgLoading
+                ? "Loading assigned ECG..."
+                : selectedFiles.length > 0
+                  ? selectedFiles
+                      .map((file) => file.name)
+                      .join(", ")
+                  : selectedPatientId
+                    ? "Assigned ECG unavailable"
+                    : "Select a patient to load ECG"}
             </span>
 
             <span className="mt-2 max-w-lg text-sm text-slate-500">
-              CSV, NPY, TXT and WFDB HEA plus DAT recordings are supported.
+              The assigned research ECG loads automatically. Manual upload remains available as a fallback.
             </span>
 
             <input
@@ -675,6 +836,11 @@ export function ECGAnalysisWorkspace() {
             />
           </label>
 
+          {assignedEcgError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {assignedEcgError}
+            </div>
+          )}
           {error && (
             <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {error}
@@ -684,7 +850,7 @@ export function ECGAnalysisWorkspace() {
           <button
             type="button"
             onClick={analyseFile}
-            disabled={!selectedPatientId || selectedFiles.length === 0 || isAnalysing}
+            disabled={!selectedPatientId || selectedFiles.length === 0 || assignedEcgLoading || isAnalysing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAnalysing ? (
@@ -1180,6 +1346,10 @@ export function ECGAnalysisWorkspace() {
     </div>
   );
 }
+
+
+
+
 
 
 

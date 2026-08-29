@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,9 +105,96 @@ function mapAamiClass(
     : undefined;
 }
 
+type DoctorRecipient = {
+  doctorId: string;
+  doctorEmail: string;
+};
+
+async function resolveDoctorRecipient(
+  patientId: string,
+): Promise<DoctorRecipient | null> {
+  const supabase = createAdminClient();
+
+  const { data: patient, error: patientError } =
+    await supabase
+      .from("patients")
+      .select("assigned_doctor_id")
+      .eq("id", patientId)
+      .maybeSingle();
+
+  if (patientError) {
+    console.error(
+      "Unable to resolve patient assigned doctor:",
+      patientError.message,
+    );
+    return null;
+  }
+
+  const doctorId = patient?.assigned_doctor_id;
+
+  if (!doctorId) {
+    console.warn(
+      `Patient ${patientId} has no assigned doctor.`,
+    );
+    return null;
+  }
+
+  const { data: doctor, error: doctorError } =
+    await supabase
+      .from("doctors")
+      .select("id, profile_id")
+      .eq("id", doctorId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+  if (doctorError) {
+    console.error(
+      "Unable to resolve assigned doctor:",
+      doctorError.message,
+    );
+    return null;
+  }
+
+  if (!doctor?.profile_id) {
+    console.warn(
+      `Assigned doctor ${doctorId} has no profile.`,
+    );
+    return null;
+  }
+
+  const { data: profile, error: profileError } =
+    await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", doctor.profile_id)
+      .maybeSingle();
+
+  if (profileError) {
+    console.error(
+      "Unable to resolve doctor email:",
+      profileError.message,
+    );
+    return null;
+  }
+
+  const doctorEmail = profile?.email?.trim();
+
+  if (!doctorEmail) {
+    console.warn(
+      `Assigned doctor ${doctorId} has no email.`,
+    );
+    return null;
+  }
+
+  return {
+    doctorId,
+    doctorEmail,
+  };
+}
 function buildN8nPayload(
   payload: unknown,
   patientId: string,
+  doctorRecipient: DoctorRecipient | null,
 ) {
   if (!isRecord(payload)) {
     return null;
@@ -157,6 +245,12 @@ function buildN8nPayload(
 
   return {
     patient_id: patientId,
+
+    doctor_id:
+      doctorRecipient?.doctorId,
+
+    doctor_email:
+      doctorRecipient?.doctorEmail,
 
     prediction:
       asString(
@@ -241,10 +335,22 @@ async function triggerEcgOrchestration(
     return;
   }
 
+  const doctorRecipient =
+    await resolveDoctorRecipient(
+      patientId,
+    );
+
+  if (!doctorRecipient) {
+    console.warn(
+      `No doctor recipient resolved for patient ${patientId}.`,
+    );
+  }
+
   const n8nPayload =
     buildN8nPayload(
       analysisPayload,
       patientId,
+      doctorRecipient,
     );
 
   if (!n8nPayload) {
@@ -473,3 +579,4 @@ export async function POST(
     clearTimeout(timeout);
   }
 }
+
