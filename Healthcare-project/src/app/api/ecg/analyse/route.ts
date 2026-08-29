@@ -23,13 +23,22 @@ function getAnalysisEndpoint() {
 function getN8nEndpoint() {
   const baseUrl = (
     process.env.N8N_URL || DEFAULT_N8N_URL
-  ).replace(/\/+$/, "");
+  )
+    .trim()
+    .replace(/\/+$/, "");
 
-  const webhookPath =
+  const webhookPath = (
     process.env.N8N_WEBHOOK_PATH?.trim() ||
-    DEFAULT_N8N_WEBHOOK_PATH;
+    DEFAULT_N8N_WEBHOOK_PATH
+  ).replace(/^\/+/, "");
 
   return `${baseUrl}/webhook/${webhookPath}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function createErrorResponse(
@@ -63,60 +72,41 @@ function isRecord(
 
 function asNumber(
   value: unknown,
-  fallback = 0,
-) {
+): number | undefined {
   return typeof value === "number" &&
     Number.isFinite(value)
     ? value
-    : fallback;
+    : undefined;
 }
 
 function asString(
   value: unknown,
-  fallback = "",
-) {
-  return typeof value === "string"
+): string | undefined {
+  return typeof value === "string" &&
+    value.trim().length > 0
     ? value
-    : fallback;
+    : undefined;
 }
 
-function normalizedEntropy(
-  probabilities: unknown,
+function mapAamiClass(
+  predictedClass: unknown,
 ) {
-  if (!Array.isArray(probabilities)) {
-    return 0;
-  }
+  const classCodes = [
+    "N",
+    "S",
+    "V",
+    "F",
+    "Q",
+  ];
 
-  const values = probabilities.filter(
-    (value): value is number =>
-      typeof value === "number" &&
-      Number.isFinite(value) &&
-      value >= 0,
-  );
-
-  if (values.length <= 1) {
-    return 0;
-  }
-
-  const entropy = values.reduce(
-    (total, probability) => {
-      if (probability <= 0) {
-        return total;
-      }
-
-      return (
-        total -
-        probability * Math.log(probability)
-      );
-    },
-    0,
-  );
-
-  return entropy / Math.log(values.length);
+  return typeof predictedClass === "number"
+    ? classCodes[predictedClass]
+    : undefined;
 }
 
 function buildN8nPayload(
   payload: unknown,
+  patientId: string,
 ) {
   if (!isRecord(payload)) {
     return null;
@@ -130,16 +120,14 @@ function buildN8nPayload(
     "analysis_result",
     "data",
   ]) {
-    if (isRecord(payload[key])) {
-      const candidate = payload[key];
+    const candidate = payload[key];
 
-      if (
-        isRecord(candidate.prediction) &&
-        isRecord(candidate.signal)
-      ) {
-        analysis = candidate;
-        break;
-      }
+    if (
+      isRecord(candidate) &&
+      isRecord(candidate.prediction)
+    ) {
+      analysis = candidate;
+      break;
     }
   }
 
@@ -155,134 +143,114 @@ function buildN8nPayload(
     ? analysis.signal
     : {};
 
+  const oodAssessment = isRecord(
+    analysis.ood_assessment,
+  )
+    ? analysis.ood_assessment
+    : {};
+
   const recordingSummary = isRecord(
     analysis.recording_summary,
   )
     ? analysis.recording_summary
     : {};
 
-  const confidence = asNumber(
-    prediction.confidence,
-    0,
-  );
-
-  const predictedLabel = asString(
-    prediction.predicted_label,
-    "Unknown",
-  );
-
-  const predictedClass =
-    prediction.predicted_class;
-
-  const classCodes = [
-    "N",
-    "S",
-    "V",
-    "F",
-    "Q",
-  ];
-
-  const predictedAami =
-    typeof predictedClass === "number"
-      ? classCodes[predictedClass] ?? "Q"
-      : "Q";
-
-  const probabilities =
-    prediction.probabilities;
-
-  let uncertaintyLevel = "Low";
-
-  if (confidence < 0.6) {
-    uncertaintyLevel = "High";
-  } else if (confidence < 0.8) {
-    uncertaintyLevel = "Moderate";
-  }
-
-  const lead =
-    asString(signal.lead_name) ||
-    (
-      Array.isArray(signal.lead_names) &&
-      typeof signal.lead_names[0] ===
-        "string"
-        ? signal.lead_names[0]
-        : "Unknown"
-    );
-
-  const recordId =
-    asString(signal.record_id) ||
-    "batch";
-
   return {
-    patient_id: recordId,
+    patient_id: patientId,
 
     prediction:
-      predictedLabel,
-
-    confidence,
-
-    uncertainty_level:
-      uncertaintyLevel,
-
-    normalized_entropy:
-      normalizedEntropy(
-        probabilities,
+      asString(
+        prediction.predicted_label,
       ),
 
-    dominant_ecg_region:
-      "QRS",
+    predicted_class_aami:
+      mapAamiClass(
+        prediction.predicted_class,
+      ),
 
-    class_recall: 0,
+    confidence:
+      asNumber(
+        prediction.confidence,
+      ),
+
+    normalized_entropy:
+      asNumber(
+        oodAssessment
+          .normalized_prediction_entropy,
+      ),
 
     ecg_lead:
-      lead,
+      asString(
+        signal.lead_name,
+      ),
 
-    true_class_aami:
-      predictedAami,
+    pipeline_recommendation:
+      asString(
+        analysis.recommended_interpretation,
+      ),
 
-    correct: false,
+    input_accepted:
+      analysis.input_accepted,
 
-    blind_classes: [],
+    model_prediction_produced:
+      analysis.model_prediction_produced,
+
+    signal_suitability:
+      analysis.signal_suitability,
+
+    ood_assessment:
+      analysis.ood_assessment,
+
+    analysis_scope:
+      analysis.analysis_scope,
+
+    reasoning:
+      analysis.reasoning,
+
+    clinical_report:
+      analysis.clinical_report,
+
+    analysis_warnings:
+      analysis.analysis_warnings,
 
     total_beats:
       asNumber(
         recordingSummary.total_valid_beats,
-        0,
       ),
 
     abnormal_beat_count:
       asNumber(
         recordingSummary.abnormal_beat_count,
-        0,
       ),
   };
 }
 
 async function triggerEcgOrchestration(
   analysisPayload: unknown,
+  patientId: string,
 ) {
   const secret =
-    process.env.N8N_WEBHOOK_SECRET ||
-    process.env.N8N_API_KEY ||
+    process.env.N8N_WEBHOOK_SECRET?.trim() ||
+    process.env.N8N_API_KEY?.trim() ||
     "";
 
   if (!secret) {
     console.error(
       "ECG n8n orchestration skipped because N8N_WEBHOOK_SECRET is not configured.",
     );
-
     return;
   }
 
   const n8nPayload =
     buildN8nPayload(
       analysisPayload,
+      patientId,
     );
 
   if (!n8nPayload) {
     console.error(
       "ECG n8n orchestration skipped because the analysis payload could not be mapped.",
     );
-
     return;
   }
 
@@ -300,11 +268,13 @@ async function triggerEcgOrchestration(
             `Bearer ${secret}`,
         },
 
-        body: JSON.stringify(
-          n8nPayload,
-        ),
+        body:
+          JSON.stringify(
+            n8nPayload,
+          ),
 
-        cache: "no-store",
+        cache:
+          "no-store",
 
         signal:
           AbortSignal.timeout(
@@ -348,6 +318,32 @@ export async function POST(
       400,
       "invalid_form_data",
       "The ECG upload request could not be read.",
+    );
+  }
+
+  const patientIdValue =
+    incomingFormData.get(
+      "patient_id",
+    );
+
+  const patientId =
+    typeof patientIdValue === "string"
+      ? patientIdValue.trim()
+      : "";
+
+  if (!patientId) {
+    return createErrorResponse(
+      400,
+      "missing_patient_id",
+      "A real Supabase patient UUID is required for ECG analysis.",
+    );
+  }
+
+  if (!isUuid(patientId)) {
+    return createErrorResponse(
+      400,
+      "invalid_patient_id",
+      "patient_id must be a valid Supabase UUID.",
     );
   }
 
@@ -421,6 +417,7 @@ export async function POST(
       ) {
         await triggerEcgOrchestration(
           payload,
+          patientId,
         );
       }
 

@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AnalysisResponse,
   EvidenceItemResponse,
 } from "@/types/backend-analysis";
@@ -225,6 +225,8 @@ function buildAttributionRegions(
 function buildSegmentedBeats(
   response: AnalysisResponse,
 ): SegmentedBeat[] {
+  const waveformPoints = buildWaveformPoints(response);
+
   const explainedBeats = new Map(
     response.recording_explanation?.beat_explanations.map(
       (beat) => [beat.beat_index, beat],
@@ -276,7 +278,16 @@ function buildSegmentedBeats(
           },
         ) ?? [];
 
-      return {
+     
+      const waveform = waveformPoints.filter(
+        (point) =>
+          point.timeSeconds >=
+            beat.source_start_timestamp_seconds &&
+          point.timeSeconds <
+            beat.source_stop_timestamp_seconds_exclusive,
+      );
+
+ return {
         beatIndex: beat.beat_index,
         rPeakSample: beat.r_peak_sample_index,
         rPeakTimeSeconds:
@@ -289,6 +300,7 @@ function buildSegmentedBeats(
           beat.source_start_timestamp_seconds,
         endTimeSeconds:
           beat.source_stop_timestamp_seconds_exclusive,
+                waveform,
         prediction: {
           classCode,
           className:
@@ -558,5 +570,7 @@ export function adaptECGAnalysisResponse(
     payload,
   );
 }
+
+
 
 

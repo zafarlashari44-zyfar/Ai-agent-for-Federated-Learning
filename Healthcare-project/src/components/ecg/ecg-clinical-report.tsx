@@ -364,7 +364,7 @@ export function ECGClinicalReport({
           </div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-2 print:grid-cols-2">
+        <section className="space-y-6 print:grid print:grid-cols-2 print:gap-6">
           <div className="space-y-5">
             <div>
               <p className="text-sm font-semibold text-slate-900">
@@ -596,3 +596,6 @@ export function ECGClinicalReport({
     </section>
   );
 }
+
+
+

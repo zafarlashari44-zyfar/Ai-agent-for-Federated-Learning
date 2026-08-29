@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { ChangeEvent, useMemo, useState } from "react";
 import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
@@ -843,7 +843,7 @@ export function ECGAnalysisWorkspace() {
 
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="space-y-5">
           <section className="rounded-3xl border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-semibold">
               Selected beat
@@ -969,7 +969,7 @@ export function ECGAnalysisWorkspace() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-2">
+      <section className="grid items-start gap-5 xl:grid-cols-2">
         <div className="rounded-3xl border bg-white p-6 shadow-sm">
           <h3 className="text-lg font-semibold">
             Clinical evidence
@@ -1068,6 +1068,12 @@ export function ECGAnalysisWorkspace() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 
