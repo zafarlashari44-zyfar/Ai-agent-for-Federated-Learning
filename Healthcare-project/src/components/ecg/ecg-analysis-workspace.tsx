@@ -1,5 +1,5 @@
 ﻿"use client";
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
 import {
   Activity,
@@ -376,9 +376,74 @@ function getEvidenceStyle(
   };
 }
 
+type PatientOption = {
+  id: string;
+  name: string;
+  email: string | null;
+};
+
 export function ECGAnalysisWorkspace() {
   const [selectedFiles, setSelectedFiles] =
     useState<File[]>([]);
+
+  const [patients, setPatients] =
+    useState<PatientOption[]>([]);
+
+  const [selectedPatientId, setSelectedPatientId] =
+    useState("");
+
+  const [patientsLoading, setPatientsLoading] =
+    useState(true);
+
+  const [patientLoadError, setPatientLoadError] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPatients() {
+      try {
+        const response = await fetch(
+          "/api/doctor/ecg-patients",
+          { cache: "no-store" },
+        );
+
+        const body = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            body?.error ?? "Unable to load patients.",
+          );
+        }
+
+        if (active) {
+          setPatients(
+            Array.isArray(body.patients)
+              ? body.patients
+              : [],
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setPatientLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load patients.",
+          );
+        }
+      } finally {
+        if (active) {
+          setPatientsLoading(false);
+        }
+      }
+    }
+
+    loadPatients();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const {
     analyse,
@@ -491,13 +556,17 @@ export function ECGAnalysisWorkspace() {
   }
 
   async function analyseFile() {
-    if (selectedFiles.length === 0) {
+    if (
+      selectedFiles.length === 0 ||
+      !selectedPatientId
+    ) {
       return;
     }
 
     try {
       const result = await analyse({
         files: selectedFiles,
+        patientId: selectedPatientId,
         metadata: {
           selectedLead:
             selectedFiles.some((file) => file.name.toLowerCase().endsWith(".hea"))
@@ -539,6 +608,49 @@ export function ECGAnalysisWorkspace() {
         </div>
 
         <div className="p-6">
+          <div className="mb-5">
+            <label
+              htmlFor="ecg-patient"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Select patient
+            </label>
+
+            <select
+              id="ecg-patient"
+              value={selectedPatientId}
+              onChange={(event) =>
+                setSelectedPatientId(event.target.value)
+              }
+              disabled={patientsLoading}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm"
+            >
+              <option value="">
+                {patientsLoading
+                  ? "Loading patients..."
+                  : "Choose a patient"}
+              </option>
+
+              {patients.map((patient) => (
+                <option
+                  key={patient.id}
+                  value={patient.id}
+                >
+                  {patient.name}
+                  {patient.email
+                    ? ` — ${patient.email}`
+                    : ""}
+                </option>
+              ))}
+            </select>
+
+            {patientLoadError && (
+              <p className="mt-2 text-sm text-red-600">
+                {patientLoadError}
+              </p>
+            )}
+          </div>
+
           <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
             <div className="rounded-2xl bg-blue-100 p-4">
               <Upload className="h-8 w-8 text-blue-600" />
@@ -572,7 +684,7 @@ export function ECGAnalysisWorkspace() {
           <button
             type="button"
             onClick={analyseFile}
-            disabled={selectedFiles.length === 0 || isAnalysing}
+            disabled={!selectedPatientId || selectedFiles.length === 0 || isAnalysing}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-4 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAnalysing ? (
@@ -1068,6 +1180,7 @@ export function ECGAnalysisWorkspace() {
     </div>
   );
 }
+
 
 
 

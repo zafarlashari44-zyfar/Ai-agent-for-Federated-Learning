@@ -1,4 +1,4 @@
-import { adaptECGAnalysisResponse } from "@/adapters/analysis-adapter";
+﻿import { adaptECGAnalysisResponse } from "@/adapters/analysis-adapter";
 
 import type {
   ECGAnalysisResult,
@@ -7,6 +7,7 @@ import type {
 
 export interface ECGUploadPayload {
   files: File[];
+  patientId?: string;
   metadata?: ECGUploadRequestMetadata;
   includeExplanations?: boolean;
   includeOverlay?: boolean;
@@ -106,6 +107,10 @@ export async function analyseECG(
 
   const formData = new FormData();
 
+  if (payload.patientId) {
+    formData.append("patient_id", payload.patientId);
+  }
+
   formData.append("file", payload.files[0]);
 
   if (payload.files.length > 1) {
@@ -168,5 +173,7 @@ export async function analyseECG(
 
   return adaptECGAnalysisResponse(body);
 }
+
+
 
 
