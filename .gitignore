@@ -47,3 +47,12 @@ outputs/orchestration/*
 !outputs/orchestration/ecg_audit_log.json
 
 !outputs/orchestration/ecg_audit_log.json
+
+# Local MIT-BIH dataset
+datasets/mitdb/
+
+# Local backup files
+*.bak
+
+# Generated evaluation images
+outputs/evaluation/*.png
