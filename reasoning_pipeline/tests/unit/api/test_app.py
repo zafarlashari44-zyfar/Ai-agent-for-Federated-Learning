@@ -141,3 +141,25 @@ def test_unsuitable_upload_returns_structured_http_422() -> None:
             "No technically detectable R peaks were found."
         ],
     }
+
+def test_oversized_upload_returns_http_413_with_correct_detail() -> None:
+    application = create_app()
+
+    with TestClient(application) as client:
+        response = client.post(
+            "/api/v1/analyse",
+            files={
+                "file": (
+                    "record.npy",
+                    b"x" * (25 * 1024 * 1024 + 1),
+                )
+            },
+            data={"sampling_rate_hz": "360"},
+        )
+
+    assert response.status_code == 413
+    assert response.json() == {
+        "error": "upload_too_large",
+        "detail": "Uploaded ECG file exceeds the 25 MB limit.",
+    }
+
