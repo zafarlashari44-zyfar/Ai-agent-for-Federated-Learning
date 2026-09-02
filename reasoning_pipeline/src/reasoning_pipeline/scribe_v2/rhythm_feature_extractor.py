@@ -242,12 +242,6 @@ class RhythmFeatureExtractor:
                 "minimum."
             )
 
-        if np.any(rr_intervals > self.maximum_rr_ms):
-            raise FeatureExtractionError(
-                "An RR interval exceeds the configured physiological "
-                "maximum."
-            )
-
         sample_indices = np.asarray(
             r_peaks.sample_indices,
             dtype=np.int64,

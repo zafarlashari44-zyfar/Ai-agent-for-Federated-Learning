@@ -207,17 +207,15 @@ def test_extractor_rejects_rr_below_minimum() -> None:
         RhythmFeatureExtractor().extract(r_peaks)
 
 
-def test_extractor_rejects_rr_above_maximum() -> None:
+def test_extractor_accepts_long_rr_interval() -> None:
     r_peaks = create_r_peak_series(
         (1000.0, 3000.0)
     )
 
-    with pytest.raises(
-        FeatureExtractionError,
-        match="exceeds the configured physiological maximum",
-    ):
-        RhythmFeatureExtractor().extract(r_peaks)
+    result = RhythmFeatureExtractor().extract(r_peaks)
 
+    assert result.mean_rr_ms == pytest.approx(2000.0)
+    assert result.heart_rate_min_bpm == pytest.approx(20.0)
 
 def test_extractor_rejects_non_increasing_sample_indices() -> None:
     r_peaks = RPeakSeries(
