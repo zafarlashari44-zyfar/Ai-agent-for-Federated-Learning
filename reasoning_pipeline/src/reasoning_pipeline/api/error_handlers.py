@@ -27,16 +27,7 @@ def register_error_handlers(application: FastAPI) -> None:
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             content={
                 "error": "upload_too_large",
-                "detail": (
-                    "Analysis could not be completed because the "
-                    "detected heartbeat intervals were outside the "
-                    "configured physiological range expected by the "
-                    "current feature extraction pipeline. "
-                    "This recording may require manual review or "
-                    "reprocessing with an alternative R-peak "
-                    "detection configuration before automated "
-                    "analysis can proceed."
-                ),
+                "detail": str(exception),
             },
         )
 
