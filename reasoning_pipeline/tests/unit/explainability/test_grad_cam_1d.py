@@ -30,10 +30,14 @@ from reasoning_pipeline.infrastructure.explainability.source_attribution_mapper 
 )
 from reasoning_pipeline.orchestration.model_input_preparer import PreparedBeat
 
-CHECKPOINT = Path(
-    "../fl_ecg_orchestrator/outputs/checkpoints/"
-    "fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
-).resolve()
+REPO_ROOT = Path(__file__).resolve().parents[4]
+CHECKPOINT = (
+    REPO_ROOT
+    / "fl_ecg_orchestrator"
+    / "outputs"
+    / "checkpoints"
+    / "fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
+)
 CHECKPOINT_HASH = (
     "e9119a15cf9bb8b3d15c085e7be4889"
     "a49f0649ef27682be03a979d6eba0faa2"

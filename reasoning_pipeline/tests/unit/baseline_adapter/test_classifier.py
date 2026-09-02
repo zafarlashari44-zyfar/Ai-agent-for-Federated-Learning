@@ -8,10 +8,14 @@ from reasoning_pipeline.baseline_adapter import (
     InvalidBeatError,
 )
 
-CHECKPOINT = Path(
-    "../fl_ecg_orchestrator/outputs/checkpoints/"
-    "fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
-).resolve()
+REPO_ROOT = Path(__file__).resolve().parents[4]
+CHECKPOINT = (
+    REPO_ROOT
+    / "fl_ecg_orchestrator"
+    / "outputs"
+    / "checkpoints"
+    / "fedavg_mu_0.0_smote_0_seed_42_final_round_10.pth"
+)
 
 
 @pytest.fixture(scope="module")
