@@ -113,7 +113,7 @@ class HeuristicSignalSuitabilityAssessor:
 
         if signal.resampled:
             warnings.append("Signal was resampled to the model sampling rate.")
-        if signal.source_format != "npy" or "mit-bih" not in signal.source.casefold():
+        if "mit-bih" not in signal.source.casefold():
             warnings.append("Source is outside the validated MIT-BIH dataset.")
         if signal.lead_name not in {"MLII", "II", "Lead II"}:
             warnings.append("Selected lead is not MLII or Lead II.")
