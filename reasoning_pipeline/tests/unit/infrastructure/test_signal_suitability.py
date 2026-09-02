@@ -43,6 +43,18 @@ def test_valid_mit_bih_style_signal_is_accepted() -> None:
     assert result.detected_r_peak_count >= 2
 
 
+def test_valid_mit_bih_wfdb_signal_does_not_get_external_source_warning() -> None:
+    result = HeuristicSignalSuitabilityAssessor().assess(
+        ecg_signal(source="mit-bih", source_format="wfdb")
+    )
+
+    assert result.suitable_for_processing
+    assert not any(
+        "outside the validated MIT-BIH" in item
+        for item in result.warnings
+    )
+
+
 def test_external_wfdb_and_ptbxl_style_signal_is_not_rejected() -> None:
     result = HeuristicSignalSuitabilityAssessor().assess(
         ecg_signal(source="ptb-xl", source_format="wfdb")
