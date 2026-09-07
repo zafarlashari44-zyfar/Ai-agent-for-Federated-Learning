@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useECGAnalysis } from "@/hooks/use-ecg-analysis";
@@ -670,10 +670,11 @@ export function ECGAnalysisWorkspace() {
         files: selectedFiles,
         patientId: selectedPatientId,
         metadata: {
-          selectedLead:
-            selectedFiles.some((file) => file.name.toLowerCase().endsWith(".hea"))
-              ? "MLII"
-              : selectedLead,
+          selectedLead: selectedFiles.some((file) =>
+            file.name.toLowerCase().endsWith(".hea"),
+          )
+            ? undefined
+            : selectedLead,
         },
         includeExplanations: true,
         includeOverlay: true,
@@ -876,8 +877,20 @@ export function ECGAnalysisWorkspace() {
         <div className="grid lg:grid-cols-[1fr_auto]">
           <div className="p-6">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-300">
-                Abnormal rhythm detected
+              <span
+                className={
+                  analysis.prediction.classCode === "N" &&
+                  analysis.prediction.abnormalBeatCount === 0
+                    ? "rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-300"
+                    : "rounded-full bg-red-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-300"
+                }
+              >
+                {analysis.prediction.classCode === "N" &&
+                analysis.prediction.abnormalBeatCount === 0
+                  ? "Normal rhythm"
+                  : analysis.prediction.classCode === "N"
+                    ? "Abnormal events detected"
+                    : "Abnormal rhythm detected"}
               </span>
 
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300">

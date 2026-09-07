@@ -1,4 +1,4 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import { NextResponse } from "next/server";
@@ -9,6 +9,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function loadOrFetchFile(
+  localPath: string,
+  remoteUrl: string,
+): Promise<Buffer> {
+  try {
+    return await fs.readFile(localPath);
+  } catch {
+    const response = await fetch(remoteUrl);
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch ECG file from PhysioNet: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    await fs.mkdir(path.dirname(localPath), { recursive: true });
+    await fs.writeFile(localPath, buffer);
+
+    return buffer;
+  }
+}
 type ECGMapping = {
   patient_id: string;
   demo_ecg_id: string | null;
@@ -113,9 +136,17 @@ export async function GET(request: Request) {
   );
 
   try {
+    const physioNetBaseUrl = "https://physionet.org/files/mitdb/1.0.0";
+
     const [heaBuffer, datBuffer] = await Promise.all([
-      fs.readFile(heaPath),
-      fs.readFile(datPath),
+      loadOrFetchFile(
+        heaPath,
+        `${physioNetBaseUrl}/${path.basename(mapping.hea_filename)}`,
+      ),
+      loadOrFetchFile(
+        datPath,
+        `${physioNetBaseUrl}/${path.basename(mapping.dat_filename)}`,
+      ),
     ]);
 
     return NextResponse.json({
@@ -138,7 +169,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: `Assigned MIT-BIH record ${mapping.record_id} was not found in the local dataset.`,
+        error: `Assigned MIT-BIH record ${mapping.record_id} could not be loaded from the local dataset or PhysioNet.`,
         details:
           error instanceof Error
             ? error.message
