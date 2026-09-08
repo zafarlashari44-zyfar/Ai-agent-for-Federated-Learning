@@ -63,10 +63,12 @@ export function ECGEventTimeline({
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-red-700">
-            <CircleDot className="h-3.5 w-3.5" />
-            {abnormalBeats.length} abnormal beats
-          </span>
+          {abnormalBeats.length > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-red-700">
+              <CircleDot className="h-3.5 w-3.5" />
+              {abnormalBeats.length} abnormal beats
+            </span>
+          )}
 
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
             <AlertTriangle className="h-3.5 w-3.5" />
@@ -188,3 +190,4 @@ export function ECGEventTimeline({
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
@@ -261,7 +261,63 @@ class ECGAnalysisPipeline:
                 )
             )
 
-        representative_index = len(prepared_beats) // 2
+        # Select a recording-level representative prediction.
+        #
+        # Isolated abnormal beat predictions are retained in the event-level
+        # results but do not automatically make the entire recording abnormal.
+        # A recording is promoted to an abnormal primary class only when the
+        # predicted abnormal-beat burden is at least 1%.
+        abnormal_indices = [
+            index
+            for index, candidate in enumerate(predictions)
+            if candidate.predicted_class in (1, 2, 3, 4)
+        ]
+
+        abnormal_burden = (
+            len(abnormal_indices) / len(predictions)
+            if predictions
+            else 0.0
+        )
+
+        minimum_abnormal_burden = 0.01
+
+        if abnormal_burden >= minimum_abnormal_burden:
+            abnormal_class_counts = {
+                class_index: sum(
+                    candidate.predicted_class == class_index
+                    for candidate in predictions
+                )
+                for class_index in (1, 2, 3, 4)
+            }
+
+            primary_abnormal_class = max(
+                abnormal_class_counts,
+                key=lambda class_index: (
+                    abnormal_class_counts[class_index],
+                    max(
+                        (
+                            candidate.confidence
+                            for candidate in predictions
+                            if candidate.predicted_class == class_index
+                        ),
+                        default=0.0,
+                    ),
+                ),
+            )
+
+            representative_index = max(
+                (
+                    index
+                    for index, candidate in enumerate(predictions)
+                    if candidate.predicted_class == primary_abnormal_class
+                ),
+                key=lambda index: predictions[index].confidence,
+            )
+        else:
+            # Preserve the established representative-beat behaviour for
+            # recordings below the abnormal-burden threshold.
+            representative_index = len(prepared_beats) // 2
+
         prepared_beat = prepared_beats[representative_index]
         prediction = predictions[representative_index]
 
@@ -408,3 +464,6 @@ def create_default_pipeline(
         recording_attribution_compositor=RecordingAttributionCompositor(),
         ood_assessor=HeuristicOODAssessor(),
     )
+
+
+
