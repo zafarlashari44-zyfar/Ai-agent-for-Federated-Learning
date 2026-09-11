@@ -8,13 +8,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "ea23146b-ada8-4779-84df-ac2f449b646b",
+      "id": "4b6f9468-b155-4a0f-a5a4-78b0f75b8097",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1808,
-        160
+        -1680,
+        192
       ],
       "webhookId": "ecg-analysis-webhook-001"
     },
@@ -22,13 +22,13 @@
       "parameters": {
         "jsCode": "// Validate the incoming webhook request from Zafar's dashboard.\n// Accepts either:\n//   (a) a single-patient payload: { patient_id, prediction, confidence, ... }\n//   (b) a batch payload from the FL cohort file: { records: [...] }\n//   (c) a health-check: { event: 'automation.health' }\n\nconst req = $input.first().json;\nconst body = req.body || req;\n\n// Auth is validated at the webhook transport layer — $env is not accessible\n// inside the Code node sandbox, so secret checking is skipped here.\n\n// Health check pass-through\nif (body.event === 'automation.health') {\n  return [{ json: { healthCheck: true, event: body.event, data: body.data || {} } }];\n}\n\n// Single patient payload (from dashboard triggering one analysis)\nif (body.patient_id) {\n  const runId = 'ORC-' + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);\n  return [{ json: { ...body, run_id: runId, case_index: 1, cohort_size: 1, dispatched_at: new Date().toISOString(), blind_classes: body.blind_classes || [] } }];\n}\n\n// Batch payload with records array\nif (body.records && Array.isArray(body.records)) {\n  const runId = 'ORC-' + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);\n  return body.records.map((r, i) => ({ json: { ...r, run_id: runId, case_index: i + 1, cohort_size: body.records.length, dispatched_at: new Date().toISOString(), blind_classes: body.blind_classes || r.blind_classes || [] } }));\n}\n\nthrow new Error('Invalid payload: expected patient_id, records array, or automation.health event.');"
       },
-      "id": "454841a9-c79b-43e3-92f6-de1d4b409bb2",
+      "id": "39eedaba-a645-41e2-9ef4-e1253081f681",
       "name": "Validate & Route Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1568,
-        160
+        -1440,
+        192
       ]
     },
     {
@@ -56,13 +56,13 @@
         },
         "options": {}
       },
-      "id": "f26788a3-34cf-4acd-a406-e2405575cb41",
+      "id": "dbd4a8f4-a7c1-47ab-8062-20428190ffb6",
       "name": "Health Check?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1328,
-        160
+        -1200,
+        192
       ]
     },
     {
@@ -71,13 +71,13 @@
         "responseBody": "={{ JSON.stringify({ ok: true, service: 'n8n-ecg-orchestrator', workflow: 'ecg-analysis' }) }}",
         "options": {}
       },
-      "id": "c3263851-d15b-4714-82a3-eb861d25284a",
+      "id": "337d16d4-b0cf-4a53-8034-8fea8d8f37ab",
       "name": "Respond Healthy",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -1088,
-        32
+        -960,
+        64
       ]
     },
     {
@@ -97,13 +97,13 @@
           "timeout": 600000
         }
       },
-      "id": "4a998a2d-28e2-47b8-b7a9-77825c2b4737",
+      "id": "a905a50d-d3ed-41cd-878c-5dd74b2c6c26",
       "name": "Call Clinical Agent API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1088,
-        288
+        -960,
+        320
       ],
       "retryOnFail": true,
       "maxTries": 2,
@@ -114,26 +114,26 @@
       "parameters": {
         "jsCode": "const RISK = {\n  escalationThreshold: 0.45,\n  recallFloor: 0.50,\n  confidenceFloor: 0.70,\n};\n\nconst WEIGHTS = {\n  abnormal: 0.30,\n  entropy: 0.30,\n  urgency: 0.25,\n  unreliableClass: 0.15,\n};\n\nconst URGENCY_WEIGHT = {\n  Low: 0.00,\n  Medium: 0.50,\n  High: 0.85,\n  Critical: 1.00,\n  Unknown: 0.50,\n};\n\nconst sourceItems = $(\"Validate & Route Input\").all().map(item => item.json || {});\n\nfunction sourceForCurrentItem(currentItem, index) {\n  const current = currentItem.json || {};\n  const patientId = current.patient_id || current.features?.patient_id;\n\n  if (patientId) {\n    const matched = sourceItems.find(item => item.patient_id === patientId);\n    if (matched) return matched;\n  }\n\n  try {\n    const matchedByIndex = $(\"Validate & Route Input\").itemMatching(index);\n    if (matchedByIndex?.json) return matchedByIndex.json;\n  } catch (error) {}\n\n  return sourceItems[index] || {};\n}\n\nfunction firstValue(...values) {\n  for (const value of values) {\n    if (value !== undefined && value !== null && value !== \"\") {\n      return value;\n    }\n  }\n  return undefined;\n}\n\nfunction asNumber(value, fallback = 0) {\n  const number = Number(value);\n  return Number.isFinite(number) ? number : fallback;\n}\n\nfunction asPercentage(value) {\n  const number = Number(value);\n\n  if (!Number.isFinite(number)) {\n    return \"Not provided\";\n  }\n\n  if (number <= 1) {\n    return `${(number * 100).toFixed(1)}%`;\n  }\n\n  return `${number.toFixed(1)}%`;\n}\n\nfunction isNormalClass(prediction, aamiClass) {\n  const predictionText = String(prediction || \"\").trim().toUpperCase();\n  const aamiText = String(aamiClass || \"\").trim().toUpperCase();\n\n  return (\n    predictionText === \"N\" ||\n    predictionText === \"NORMAL\" ||\n    predictionText === \"NORMAL SINUS RHYTHM\" ||\n    predictionText === \"SINUS RHYTHM\" ||\n    aamiText === \"N\"\n  );\n}\n\nfunction isAbnormalClass(prediction, aamiClass) {\n  const abnormalClasses = [\"S\", \"V\", \"F\", \"Q\"];\n  const predictionText = String(prediction || \"\").trim().toUpperCase();\n  const aamiText = String(aamiClass || \"\").trim().toUpperCase();\n\n  if (abnormalClasses.includes(aamiText)) return true;\n  if (abnormalClasses.includes(predictionText)) return true;\n\n  return predictionText.length > 0 && predictionText !== \"N\" && predictionText !== \"NOT PROVIDED\";\n}\n\nfunction buildDoctorMessage(data) {\n  return [\n    \"CLINICAL REVIEW REQUIRED\",\n    \"\",\n    `Patient: ${data.patientId}`,\n    `ECG record: ${data.ecgRecord}`,\n    \"\",\n    \"Clinical summary:\",\n    \"The ECG workflow identified findings that require clinician review.\",\n    \"\",\n    \"Model finding:\",\n    `Prediction: ${data.prediction}`,\n    `AAMI class: ${data.predictedClassAami}`,\n    `Confidence: ${asPercentage(data.confidence)}`,\n    `Uncertainty: ${data.uncertaintyLevel}`,\n    `Clinical status: ${data.clinicalStatus}`,\n    \"\",\n    \"Reason for review:\",\n    data.reviewReason,\n    \"\",\n    \"Recommended action:\",\n    data.suggestedNextAction,\n    \"\",\n    \"Technical audit:\",\n    `Run ID: ${data.runId}`,\n    `Dominant ECG region: ${data.dominantEcgRegion}`,\n    `Risk score: ${data.riskScore}`,\n    `Agent/API status: ${data.apiStatus}`,\n    `Pipeline note: ${data.pipelineRecommendation}`,\n    \"\",\n    \"Important note:\",\n    \"This is an AI-assisted screening output and must not be treated as a final diagnosis without clinician confirmation.\",\n  ].join(\"\\n\");\n}\n\nfunction buildPatientMessage(data) {\n  if (data.clinicalStatus === \"Normal\" && data.reviewReason === \"All governance gates passed\") {\n    return [\n      \"Hello,\",\n      \"\",\n      \"Your ECG recording has been processed by the clinical review system.\",\n      \"\",\n      \"The automated review did not identify findings that require immediate escalation. This does not replace a clinician’s judgement, and a healthcare professional may still review the result as part of normal care.\",\n      \"\",\n      \"Please continue to follow any advice already given by your healthcare team.\",\n      \"\",\n      \"If you feel unwell, have chest pain, shortness of breath, fainting, or severe symptoms, please seek urgent medical help.\",\n      \"\",\n      \"Thank you.\",\n    ].join(\"\\n\");\n  }\n\n  return [\n    \"Hello,\",\n    \"\",\n    \"Your ECG recording has been processed by the clinical review system.\",\n    \"\",\n    \"The automated review found features that may need checking by a healthcare professional. This does not mean a final diagnosis has been made.\",\n    \"\",\n    \"A clinician will review the result and confirm whether any action is needed.\",\n    \"\",\n    \"Please do not make medical decisions based only on this automated message.\",\n    \"\",\n    \"If you feel unwell, have chest pain, shortness of breath, fainting, or severe symptoms, please seek urgent medical help.\",\n    \"\",\n    \"Thank you.\",\n  ].join(\"\\n\");\n}\n\nconst output = [];\n\nfor (let index = 0; index < $input.all().length; index++) {\n  const api = $input.all()[index].json || {};\n  const src = sourceForCurrentItem($input.all()[index], index);\n\n  const agent = firstValue(api.agent_output, api.body?.agent_output, {});\n  const features = firstValue(api.features, api.body?.features, {});\n\n  const patientId = firstValue(\n    api.patient_id,\n    src.patient_id,\n    features.patient_id,\n    \"Not provided\"\n  );\n\n  const ecgRecord = firstValue(\n    src.ecg_record,\n    src.record_id,\n    src.source_record,\n    src.mit_bih_record,\n    src.assigned_ecg_record,\n    src.assigned_record,\n    src.demo_record,\n    api.ecg_record,\n    api.record_id,\n    api.source_record,\n    api.mit_bih_record,\n    api.assigned_ecg_record,\n    api.assigned_record,\n    api.demo_record,\n    \"MIT-BIH record not provided\"\n  );\n\n  const runId = firstValue(src.run_id, api.run_id, \"Not provided\");\n\n  const prediction = firstValue(\n    features.prediction,\n    src.prediction,\n    src.predicted_class_aami,\n    api.prediction,\n    \"Not provided\"\n  );\n\n  const predictedClassAami = firstValue(\n    src.predicted_class_aami,\n    features.predicted_class_aami,\n    api.predicted_class_aami,\n    prediction\n  );\n\n  const confidence = asNumber(\n    firstValue(features.confidence, src.confidence, api.confidence),\n    0\n  );\n\n  const normalizedEntropy = asNumber(\n    firstValue(src.normalized_entropy, api.normalized_entropy),\n    0\n  );\n\n  const urgencyLevel = firstValue(\n    agent.urgency_level,\n    api.urgency_level,\n    \"Unknown\"\n  );\n\n  const uncertaintyLevel = firstValue(\n    src.uncertainty_level,\n    api.uncertainty_level,\n    src.risk_flag,\n    \"Unknown\"\n  );\n\n  const classRecall = src.class_recall == null ? null : asNumber(src.class_recall, null);\n  const blindClasses = Array.isArray(src.blind_classes) ? src.blind_classes : [];\n\n  const agentStatus = firstValue(api.status, api.api_status, api.body?.status, \"success\");\n  const apiStatus = agentStatus;\n\n  const agentSucceeded =\n    api.status === \"success\" ||\n    api.api_status === \"success\" ||\n    api.body?.status === \"success\" ||\n    apiStatus === \"success\";\n\n  const confidenceGap = asNumber(src.cohort_confidence_gap, 0);\n  const calibratedConfidence = Math.max(0, Math.min(1, confidence + confidenceGap));\n\n  const normalPrediction = isNormalClass(prediction, predictedClassAami);\n  const abnormalPrediction = isAbnormalClass(prediction, predictedClassAami);\n\n  const clinicalStatus = firstValue(\n    api.clinical_status,\n    api.body?.clinical_status,\n    agent.clinical_status,\n    abnormalPrediction ? \"Abnormal\" : \"Normal\"\n  );\n\n  const abnormalEvidence = clinicalStatus === \"Abnormal\" || abnormalPrediction;\n  const classUnreliability = classRecall == null ? 0.5 : 1 - classRecall;\n\n  const riskScore = Number((\n    WEIGHTS.abnormal * (abnormalEvidence ? 1 : 0) +\n    WEIGHTS.entropy * normalizedEntropy +\n    WEIGHTS.urgency * (URGENCY_WEIGHT[urgencyLevel] ?? 0.5) +\n    WEIGHTS.unreliableClass * classUnreliability\n  ).toFixed(4));\n\n  const reviewReasons = [];\n\n  if (uncertaintyLevel === \"High\") {\n    reviewReasons.push(\"MC-Dropout uncertainty is high\");\n  }\n\n  if (abnormalEvidence) {\n    if (normalPrediction) {\n      reviewReasons.push(\n        \"Model predicted N, but supporting clinical evidence indicated abnormal rhythm features or conflicting evidence\"\n      );\n    } else {\n      reviewReasons.push(`Abnormal rhythm predicted (${prediction})`);\n    }\n  }\n\n  if (calibratedConfidence < RISK.confidenceFloor) {\n    reviewReasons.push(\n      `Calibration-corrected confidence ${(calibratedConfidence * 100).toFixed(1)}% is below the review floor`\n    );\n  }\n\n  if (urgencyLevel === \"High\" || urgencyLevel === \"Critical\") {\n    reviewReasons.push(`Agent assigned ${urgencyLevel} urgency`);\n  }\n\n  if (classRecall != null && classRecall < RISK.recallFloor) {\n    reviewReasons.push(`Predicted class recall ${classRecall.toFixed(3)} is below the review floor`);\n  }\n\n  if (riskScore >= RISK.escalationThreshold) {\n    reviewReasons.push(`Composite risk score ${riskScore} meets the escalation threshold`);\n  }\n\n  if (!agentSucceeded) {\n    reviewReasons.push(`Agent status: ${apiStatus}`);\n  }\n\n  const blindClassRisk =\n    blindClasses.length > 0 &&\n    uncertaintyLevel !== \"Low\" &&\n    !blindClasses.includes(predictedClassAami);\n\n  if (blindClassRisk) {\n    reviewReasons.push(`Blind-class exposure: model cannot detect class(es) ${blindClasses.join(\"/\")}`);\n  }\n\n  const disagreement =\n    urgencyLevel === \"Low\" &&\n    (uncertaintyLevel === \"High\" || calibratedConfidence < RISK.confidenceFloor);\n\n  if (disagreement) {\n    reviewReasons.push(\"Agent urgency was low, but pipeline uncertainty was high\");\n  }\n\n  const reviewReason = reviewReasons.length\n    ? reviewReasons.join(\" | \")\n    : \"All governance gates passed\";\n\n  const suggestedNextAction = firstValue(\n    agent.suggested_next_action,\n    api.suggested_next_action,\n    \"Please review the ECG trace, model output, and dashboard report before making any clinical decision.\"\n  );\n\n  const pipelineRecommendation = firstValue(\n    src.pipeline_recommendation,\n    \"Not provided\"\n  );\n\n  const dominantEcgRegion = firstValue(\n    src.dominant_ecg_region,\n    \"Not provided\"\n  );\n\n  const humanReviewRequired = reviewReasons.length > 0;\n\n  const messageData = {\n    patientId,\n    ecgRecord,\n    runId,\n    prediction,\n    predictedClassAami,\n    confidence,\n    uncertaintyLevel,\n    clinicalStatus,\n    reviewReason,\n    suggestedNextAction,\n    dominantEcgRegion,\n    riskScore,\n    apiStatus,\n    pipelineRecommendation,\n  };\n\n  const doctorMessage = buildDoctorMessage(messageData);\n\n  const patientMessage = firstValue(\n    agent.family_reassurance_message,\n    api.family_reassurance_message,\n    api.body?.family_reassurance_message,\n    buildPatientMessage(messageData)\n  );\n\n  output.push({\n    json: {\n      run_id: runId,\n      patient_id: patientId,\n      ecg_record: ecgRecord,\n\n      case_index: src.case_index,\n      sample_index: src.sample_index,\n      fl_checkpoint: src.fl_checkpoint,\n      fl_round: src.fl_round,\n\n      dispatched_at: src.dispatched_at,\n      analysed_at: new Date().toISOString(),\n\n      prediction,\n      predicted_class_aami: predictedClassAami,\n      true_class_aami: src.true_class_aami,\n\n      correct: src.correct,\n      confidence,\n      calibrated_confidence: Number(calibratedConfidence.toFixed(4)),\n\n      uncertainty_level: uncertaintyLevel,\n      normalized_entropy: normalizedEntropy,\n      class_recall: classRecall,\n\n      dominant_ecg_region: dominantEcgRegion,\n      qrs_shap_signed: src.qrs_shap_signed,\n      p_wave_shap_signed: src.p_wave_shap_signed,\n      t_wave_shap_signed: src.t_wave_shap_signed,\n      ehr_triage_note: src.ehr_triage_note,\n\n      api_status: apiStatus,\n      urgency_level: urgencyLevel,\n\n      suggested_next_action: suggestedNextAction,\n\n      clinician_alert: doctorMessage,\n      doctor_technical_alert: doctorMessage,\n      family_reassurance_message: patientMessage,\n\n      pipeline_recommendation: pipelineRecommendation,\n\n      clinical_status: clinicalStatus,\n      risk_score: riskScore,\n\n      low_confidence_flag: calibratedConfidence < RISK.confidenceFloor,\n      disagreement_flag: disagreement,\n      blind_class_risk: blindClassRisk,\n      ground_truth_miss: src.correct === false,\n\n      human_review_required: humanReviewRequired,\n      review_reason: reviewReason,\n\n      governance_policy:\n        `v2.0 integrated governance: abnormal=${WEIGHTS.abnormal}, entropy=${WEIGHTS.entropy}, urgency=${WEIGHTS.urgency}, class=${WEIGHTS.unreliableClass}; ` +\n        `escalation=${RISK.escalationThreshold}, recall_floor=${RISK.recallFloor}, confidence_floor=${RISK.confidenceFloor}`,\n    },\n  });\n}\n\nreturn output;"
       },
-      "id": "01312a1b-6ded-4e64-9c6e-625f74282169",
+      "id": "c071fcf4-a251-4d73-81a4-7be5fa8e4a60",
       "name": "Normalise & Govern",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        192
+        -720,
+        224
       ]
     },
     {
       "parameters": {
         "jsCode": "// Fail-safe: agent unreachable - escalate by default.\nconst SRC   = $('Validate & Route Input').all().map(x => x.json);\nconst BY_ID = new Map(SRC.filter(s => s && s.patient_id).map(s => [s.patient_id, s]));\nfunction resolveSrc(item, i) {\n  const j = item.json || {};\n  const pid = j.patient_id || (j.features && j.features.patient_id) || null;\n  if (pid && BY_ID.has(pid)) return BY_ID.get(pid);\n  try { const m = $('Validate & Route Input').itemMatching(i); if (m && m.json) return m.json; } catch (e) {}\n  return SRC[i] || {};\n}\nreturn $input.all().map((item, _i) => {\n  const src = resolveSrc(item, _i);\n  const err = item.json.error || item.json.message || 'Unknown transport error';\n  return { json: {\n    run_id: src.run_id, patient_id: src.patient_id, case_index: src.case_index,\n    sample_index: src.sample_index, fl_checkpoint: src.fl_checkpoint, fl_round: src.fl_round,\n    analysed_at: new Date().toISOString(), prediction: src.prediction,\n    predicted_class_aami: src.predicted_class_aami, true_class_aami: src.true_class_aami,\n    correct: src.correct, confidence: src.confidence, uncertainty_level: src.uncertainty_level,\n    normalized_entropy: src.normalized_entropy, class_recall: src.class_recall,\n    api_status: 'transport_error', api_error_detail: String(err).slice(0, 500),\n    urgency_level: 'Unknown', suggested_next_action: 'Manual clinical assessment - automated agent unavailable',\n    doctor_technical_alert: 'AGENT UNAVAILABLE. No machine analysis produced for this patient.',\n    family_reassurance_message: 'The medical team is reviewing this record directly.',\n    pipeline_recommendation: src.pipeline_recommendation || 'Not provided',\n    clinical_status: 'Indeterminate', risk_score: 1.0,\n    low_confidence_flag: true, disagreement_flag: false, blind_class_risk: false,\n    ground_truth_miss: src.correct === false, human_review_required: true,\n    review_reason: 'FAIL-SAFE: clinical agent unreachable - escalated by default',\n    governance_policy: 'v2.0-integrated fail-safe path',\n    route: 'Clinical Review Queue', clinical_review_status: 'Pending - Fail-Safe Escalation'\n  }};\n});"
       },
-      "id": "3394d9ca-7c02-4bfd-9592-e5c44d30cfe9",
+      "id": "ca171129-68d1-4d51-975b-d1931f1b7452",
       "name": "Fail-Safe: Agent Unreachable",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        432
+        -720,
+        464
       ]
     },
     {
@@ -162,13 +162,13 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "f4de2d73-d0a8-4e4b-8852-d5083fb1c0a2",
+      "id": "d02f561d-399b-4ef0-891a-416af05080ed",
       "name": "Human Review Required?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -608,
-        192
+        -480,
+        224
       ]
     },
     {
@@ -204,50 +204,50 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "4ce4db03-a89c-45d6-ad86-b971a054d8d3",
+      "id": "50e663dc-9220-4c7f-8bc3-1133c19f6345",
       "name": "Prepare Clinician Alert",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -368,
-        64
+        -240,
+        96
       ]
     },
     {
       "parameters": {
         "fromEmail": "medicarepron8n@gmail.com",
         "toEmail": "={{ $(\"Fetch Patient & Doctor Emails\").item.json.doctors.profiles.email }}",
-        "subject": "=[ECG ALERT] {{ $json.patient_id }} - {{ $json.clinical_status }}",
+        "subject": "={{\n(() => {\n  const gov = $(\"Normalise & Govern\").item.json || {};\n  const src = $(\"Validate & Route Input\").item.json || {};\n  const api = $(\"Call Clinical Agent API\").item.json || {};\n\n  function firstValue(...values) {\n    for (const value of values) {\n      if (value !== undefined && value !== null && value !== \"\") {\n        return value;\n      }\n    }\n    return undefined;\n  }\n\n  function toNumber(value, fallback = 0) {\n    const number = Number(value);\n    return Number.isFinite(number) ? number : fallback;\n  }\n\n  const classCandidates = [\n    gov.predicted_class_aami,\n    gov.prediction,\n    src.predicted_class_aami,\n    src.prediction,\n    src.result,\n    src.class,\n    api.features?.predicted_class_aami,\n    api.features?.prediction,\n    api.predicted_class_aami,\n    api.prediction\n  ]\n    .filter(value => value !== undefined && value !== null && value !== \"\")\n    .map(value => String(value).trim().toUpperCase());\n\n  const hasAbnormalClass = classCandidates.some(value =>\n    [\"S\", \"V\", \"F\", \"Q\"].includes(value)\n  );\n\n  const abnormalBeatCount = toNumber(firstValue(\n    gov.abnormal_beat_count,\n    gov.abnormal_beats,\n    gov.influential_abnormal_beats,\n    gov.abnormal_or_influential_beats,\n    src.abnormal_beat_count,\n    src.abnormal_beats,\n    src.influential_abnormal_beats,\n    src.abnormal_influential_beats,\n    src.abnormal_or_influential_beats,\n    api.abnormal_beat_count,\n    api.abnormal_beats,\n    api.features?.abnormal_beat_count,\n    api.features?.abnormal_beats,\n    0\n  ));\n\n  const isAbnormalCase =\n    hasAbnormalClass ||\n    abnormalBeatCount > 0;\n\n  return isAbnormalCase\n    ? \"Clinical ECG waveform review required - \" + (gov.patient_id || \"patient\")\n    : \"ECG waveform review summary - \" + (gov.patient_id || \"patient\");\n})()\n}}",
         "emailFormat": "text",
-        "text": "={{ $(\"Normalise & Govern\").item.json.clinician_alert }}",
+        "text": "={{\n(() => {\n  const fetch = $(\"Fetch Patient & Doctor Emails\").item.json || {};\n  const gov = $(\"Normalise & Govern\").item.json || {};\n  const src = $(\"Validate & Route Input\").item.json || {};\n  const api = $(\"Call Clinical Agent API\").item.json || {};\n\n  function firstValue(...values) {\n    for (const value of values) {\n      if (value !== undefined && value !== null && value !== \"\") {\n        return value;\n      }\n    }\n    return undefined;\n  }\n\n  function toNumber(value, fallback = 0) {\n    const number = Number(value);\n    return Number.isFinite(number) ? number : fallback;\n  }\n\n  function hasValue(value) {\n    return (\n      value !== undefined &&\n      value !== null &&\n      value !== \"\" &&\n      value !== \"Not provided\" &&\n      value !== \"Unknown\"\n    );\n  }\n\n  function cleanText(value) {\n    return String(value || \"\")\n      .replace(/Model predicted [^,|.]+,?\\s*/gi, \"\")\n      .replace(/Abnormal rhythm predicted\\s*\\([^)]*\\)/gi, \"Abnormal rhythm evidence was detected\")\n      .replace(/Prediction:\\s*[^|.\\n]+/gi, \"\")\n      .replace(/AAMI class:\\s*[^|.\\n]+/gi, \"\")\n      .replace(/Confidence:\\s*[^|.\\n]+/gi, \"\")\n      .replace(/Risk score:\\s*[^|.\\n]+/gi, \"\")\n      .replace(/Composite risk score [^|.]+/gi, \"\")\n      .replace(/Agent status:\\s*[^|.\\n]+/gi, \"\")\n      .replace(/class recall [^|.\\n]+/gi, \"\")\n      .replace(/MC-Dropout uncertainty is high/gi, \"Uncertainty-related review trigger was raised\")\n      .replace(/\\b[VNSFQ]\\b/g, \"\")\n      .replace(/\\s*\\|\\s*/g, \". \")\n      .replace(/\\s+/g, \" \")\n      .replace(/^but\\s+/i, \"\")\n      .trim();\n  }\n\n  function cleanPointer(pointer) {\n    const text = cleanText(pointer);\n    const lower = text.toLowerCase();\n\n    const banned = [\n      \"prediction\",\n      \"predicted\",\n      \"aami\",\n      \"confidence\",\n      \"risk score\",\n      \"composite risk\",\n      \"model output\",\n      \"model predicted\",\n      \"class recall\"\n    ];\n\n    if (!text) return null;\n    if (banned.some(term => lower.includes(term))) return null;\n\n    return text;\n  }\n\n  const profile = fetch.profiles || {};\n  const patientName = profile.full_name || gov.patient_id || \"Not provided\";\n\n  const classCandidates = [\n    gov.predicted_class_aami,\n    gov.prediction,\n    src.predicted_class_aami,\n    src.prediction,\n    src.result,\n    src.class,\n    api.features?.predicted_class_aami,\n    api.features?.prediction,\n    api.predicted_class_aami,\n    api.prediction\n  ]\n    .filter(value => value !== undefined && value !== null && value !== \"\")\n    .map(value => String(value).trim().toUpperCase());\n\n  const hasAbnormalClass = classCandidates.some(value =>\n    [\"S\", \"V\", \"F\", \"Q\"].includes(value)\n  );\n\n  const abnormalBeatCount = toNumber(firstValue(\n    gov.abnormal_beat_count,\n    gov.abnormal_beats,\n    gov.influential_abnormal_beats,\n    gov.abnormal_or_influential_beats,\n    src.abnormal_beat_count,\n    src.abnormal_beats,\n    src.influential_abnormal_beats,\n    src.abnormal_influential_beats,\n    src.abnormal_or_influential_beats,\n    api.abnormal_beat_count,\n    api.abnormal_beats,\n    api.features?.abnormal_beat_count,\n    api.features?.abnormal_beats,\n    0\n  ));\n\n  const isAbnormalCase =\n    hasAbnormalClass ||\n    abnormalBeatCount > 0;\n\n  const detectedRPeaks = firstValue(\n    gov.detected_r_peaks,\n    gov.r_peak_count,\n    src.detected_r_peaks,\n    src.r_peak_count,\n    src.r_peaks,\n    src.num_r_peaks,\n    api.detected_r_peaks,\n    api.features?.detected_r_peaks,\n    api.features?.r_peak_count\n  );\n\n  const signalQuality = firstValue(\n    gov.signal_quality,\n    src.signal_quality,\n    src.signal_quality_score,\n    src.quality_score,\n    api.signal_quality,\n    api.features?.signal_quality\n  );\n\n  const irregularityScore = firstValue(\n    gov.irregularity_score,\n    gov.rr_irregularity_score,\n    src.irregularity_score,\n    src.rr_irregularity_score,\n    src.rr_variance_proxy,\n    api.features?.rr_variance_proxy,\n    api.rr_variance_proxy\n  );\n\n  const qrsDuration = firstValue(\n    gov.qrs_duration_ms,\n    src.qrs_duration_ms,\n    src.mean_qrs_duration_ms,\n    api.qrs_duration_ms,\n    api.features?.qrs_duration_ms\n  );\n\n  const dominantRegion = firstValue(\n    gov.dominant_ecg_region,\n    src.dominant_ecg_region,\n    api.features?.dominant_ecg_region\n  );\n\n  const problems = [];\n\n  if (isAbnormalCase) {\n    if (abnormalBeatCount > 0) {\n      problems.push(`Abnormal or influential beats identified: ${abnormalBeatCount}`);\n    }\n\n    if (hasValue(irregularityScore)) {\n      problems.push(`Rhythm timing / RR-interval irregularity evidence: ${irregularityScore}`);\n    }\n\n    if (hasValue(detectedRPeaks)) {\n      problems.push(`Detected R-peaks used for rhythm assessment: ${detectedRPeaks}`);\n    }\n\n    if (hasValue(qrsDuration)) {\n      problems.push(`QRS duration evidence: ${qrsDuration} ms`);\n    }\n\n    if (hasValue(dominantRegion)) {\n      problems.push(`ECG region requiring attention: ${dominantRegion}`);\n    }\n\n    if (Array.isArray(gov.waveform_pointers)) {\n      for (const pointer of gov.waveform_pointers) {\n        const cleaned = cleanPointer(pointer);\n        if (cleaned) {\n          problems.push(cleaned);\n        }\n      }\n    }\n\n    if (hasValue(gov.review_reason)) {\n      const cleanedReason = cleanText(gov.review_reason);\n      if (\n        cleanedReason &&\n        !cleanedReason.toLowerCase().includes(\"score\") &&\n        !cleanedReason.toLowerCase().includes(\"prediction\") &&\n        !cleanedReason.toLowerCase().includes(\"predicted\") &&\n        !cleanedReason.toLowerCase().includes(\"aami\") &&\n        !cleanedReason.toLowerCase().includes(\"confidence\")\n      ) {\n        problems.push(`Clinical review trigger: ${cleanedReason}`);\n      }\n    }\n\n    if (hasValue(gov.pipeline_recommendation)) {\n      problems.push(`Scope / source note: ${gov.pipeline_recommendation}`);\n    }\n\n    const uniqueProblems = [...new Set(problems)];\n\n    const problemText = uniqueProblems.length\n      ? uniqueProblems.map(problem => `- ${problem}`).join(\"\\n\")\n      : \"- Abnormal rhythm or waveform evidence was detected and requires clinician review.\";\n\n    return [\n      \"CLINICAL ECG WAVEFORM REVIEW REQUIRED\",\n      \"\",\n      `Patient: ${patientName}`,\n      `Patient ID: ${gov.patient_id || \"Not provided\"}`,\n      `ECG record: ${gov.ecg_record || \"Not provided\"}`,\n      \"\",\n      \"Problem identified:\",\n      problemText,\n      \"\",\n      \"Recommended action:\",\n      \"Please review the ECG waveform, R-peak timing, rhythm pattern, and available clinical context before making any clinical decision.\",\n      \"\",\n      \"Important note:\",\n      \"This is an AI-assisted screening workflow. The email summarises waveform and rhythm evidence only and must not be treated as a final diagnosis.\"\n    ].join(\"\\n\");\n  }\n\n  return [\n    \"ECG WAVEFORM REVIEW SUMMARY\",\n    \"\",\n    `Patient: ${patientName}`,\n    `Patient ID: ${gov.patient_id || \"Not provided\"}`,\n    `ECG record: ${gov.ecg_record || \"Not provided\"}`,\n    \"\",\n    \"Summary:\",\n    \"No immediate abnormal waveform issue was identified by the workflow.\",\n    \"\",\n    hasValue(detectedRPeaks) ? `R-peak evidence: ${detectedRPeaks} detected R-peaks were used for rhythm assessment.` : \"\",\n    `Abnormal beat evidence: ${abnormalBeatCount} abnormal or influential beats were identified.`,\n    hasValue(signalQuality) ? `Signal quality evidence: ${signalQuality}.` : \"\",\n    \"\",\n    \"Recommended action:\",\n    \"Routine monitoring can continue. Review the ECG trace if required by local clinical procedure.\",\n    \"\",\n    \"Important note:\",\n    \"This is an AI-assisted screening workflow. The email summarises waveform and rhythm evidence only and must not be treated as a final diagnosis.\"\n  ].filter(line => line !== \"\").join(\"\\n\");\n})()\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        -128,
-        -32
+        0,
+        0
       ],
-      "id": "ba8b1e2d-4bab-4659-a1be-05e886752066",
+      "id": "2b8ce732-335f-4b06-8560-fe346dbad183",
       "name": "Doctor Email (Escalated)",
       "webhookId": "e538a615-6a43-427d-8de3-f620b1f2f10e",
       "credentials": {
         "smtp": {
           "id": "P6riRPF7a0q4TPLT",
-          "name": "SMTP account 2"
+          "name": "SMTP account"
         }
       },
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {},
-      "id": "27ec9889-4201-476f-8dac-7c66fc920df4",
+      "id": "bccde059-2be9-42a5-8475-f8e4c6e2767b",
       "name": "HITL Gate - Await Clinician",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        112,
-        64
+        240,
+        96
       ],
       "webhookId": "unified-hitl-gate-001"
     },
@@ -284,13 +284,13 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "8b47eb51-da48-41a4-80c0-be4e95b78a89",
+      "id": "6562a0db-7436-495b-85d6-804ecba890fb",
       "name": "Record Clinician Decision",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        352,
-        64
+        480,
+        96
       ]
     },
     {
@@ -320,37 +320,37 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "bf2e4977-48ed-4bf5-a2e3-d4c4239c2c00",
+      "id": "fab769b9-79ea-410c-b6aa-c56630cc3810",
       "name": "Routine Monitoring Log",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -368,
-        352
+        -240,
+        384
       ]
     },
     {
       "parameters": {},
-      "id": "e28daa04-9b3a-4953-94d8-7cc529a10894",
+      "id": "fbd30d90-7c1c-46e7-89f0-e4acbac0ff56",
       "name": "Merge All Branches",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        592,
-        192
+        720,
+        224
       ]
     },
     {
       "parameters": {
         "jsCode": "// Build one tamper-evident audit record per patient.\nfunction fnv1a(str) {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; }\n  return ('00000000' + h.toString(16)).slice(-8);\n}\nreturn $input.all().map(item => {\n  const d = item.json;\n  const record = {\n    audit_version: '2.0-unified', run_id: d.run_id || 'unknown', patient_id: d.patient_id || 'unknown',\n    logged_at: new Date().toISOString(), fl_checkpoint: d.fl_checkpoint || 'unknown', fl_round: d.fl_round ?? null,\n    sample_index: d.sample_index ?? null, prediction: d.prediction || 'unknown',\n    predicted_class_aami: d.predicted_class_aami || 'unknown', true_class_aami: d.true_class_aami || 'unknown',\n    confidence: d.confidence ?? null, calibrated_confidence: d.calibrated_confidence ?? null,\n    uncertainty_level: d.uncertainty_level || 'unknown', normalized_entropy: d.normalized_entropy ?? null,\n    class_recall: d.class_recall ?? null, dominant_ecg_region: d.dominant_ecg_region || 'unknown',\n    qrs_shap_signed: d.qrs_shap_signed ?? null, api_status: d.api_status || 'unknown',\n    urgency_level: d.urgency_level || 'unknown', suggested_next_action: d.suggested_next_action || 'unknown',\n    clinical_status: d.clinical_status || 'unknown', risk_score: d.risk_score ?? null,\n    human_review_required: d.human_review_required ?? false, review_reason: d.review_reason || 'not recorded',\n    governance_policy: d.governance_policy || 'not recorded', route: d.route || 'unknown',\n    clinical_review_status: d.clinical_review_status || 'Not required', review_mode: d.review_mode || 'n/a',\n    hitl_released_at: d.hitl_released_at || null, low_confidence_flag: d.low_confidence_flag ?? false,\n    disagreement_flag: d.disagreement_flag ?? false, blind_class_risk: d.blind_class_risk ?? false,\n    ground_truth_miss: d.ground_truth_miss ?? false,\n    patient_notification_status: d.patient_notification_status || 'unavailable',\n    doctor_notification_status: d.doctor_notification_status || 'unavailable',\n  };\n  record.integrity_checksum = fnv1a(JSON.stringify(record));\n  record.audit_status = 'Completed';\n  return { json: record };\n});"
       },
-      "id": "8e2f17d7-1bda-4f71-9429-c4ebb33dc24d",
+      "id": "a33452ef-8944-44e9-a971-140590392573",
       "name": "Build Audit Record",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        192
+        928,
+        224
       ]
     },
     {
@@ -378,26 +378,26 @@
           "timeout": 15000
         }
       },
-      "id": "42a8333f-c824-4b94-ad2e-b6a1c73caad0",
+      "id": "0061fc5d-ba42-4965-93a3-88ced06cf0ce",
       "name": "Push Result to Dashboard",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        992,
-        192
+        1120,
+        224
       ]
     },
     {
       "parameters": {
         "jsCode": "// Aggregate all patient records into one audit log.\nconst records = $input.all().map(i => i.json);\nconst escalated = records.filter(r => r.human_review_required);\nconst count = (pred) => records.filter(pred).length;\nreturn [{ json: {\n  audit_log_version: '2.0-unified', run_id: records[0]?.run_id || 'unknown',\n  generated_at: new Date().toISOString(), fl_checkpoint: records[0]?.fl_checkpoint || 'unknown',\n  fl_round: records[0]?.fl_round ?? null,\n  summary: {\n    patients_processed: records.length, escalated_to_human: escalated.length,\n    auto_cleared: records.length - escalated.length,\n    escalation_rate: records.length ? Number((escalated.length / records.length).toFixed(3)) : 0,\n    high_uncertainty: count(r => r.uncertainty_level === 'High'),\n    low_confidence: count(r => r.low_confidence_flag), disagreements: count(r => r.disagreement_flag),\n    blind_class_exposure: count(r => r.blind_class_risk), ground_truth_misses: count(r => r.ground_truth_miss),\n    transport_errors: count(r => r.api_status === 'transport_error'),\n    mean_risk_score: records.length ? Number((records.reduce((a, r) => a + (r.risk_score || 0), 0) / records.length).toFixed(4)) : 0\n  },\n  records\n}}];"
       },
-      "id": "ac63b78c-642d-4e9c-88b2-279e27db7386",
+      "id": "ed39a179-66e4-4010-912c-bd1a570255b2",
       "name": "Aggregate Audit Log",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        192
+        1328,
+        224
       ]
     },
     {
@@ -409,13 +409,13 @@
           "fileName": "ecg_audit_log.json"
         }
       },
-      "id": "6e3da7e7-e62d-46e4-9758-f36eefa1a239",
+      "id": "95f5edc2-35ef-451e-b8cf-40f941da4d92",
       "name": "Convert Audit to File",
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        1392,
-        192
+        1520,
+        224
       ]
     },
     {
@@ -424,13 +424,13 @@
         "fileName": "C:\\Users\\Jahid Shamim\\Ai-agent-for-Federated-Learning\\outputs\\orchestration\\ecg_audit_log.json",
         "options": {}
       },
-      "id": "9edcee36-f8c4-41c5-a340-56ae4808a3d3",
+      "id": "3b8cb96e-4f85-4a5d-b044-ea13d31e1043",
       "name": "Write Audit File",
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        1600,
-        192
+        1728,
+        224
       ]
     },
     {
@@ -439,28 +439,28 @@
         "responseBody": "={{ JSON.stringify({ ok: true, patient_id: $json.records?.[0]?.patient_id || 'batch', patients_processed: $json.summary?.patients_processed, escalated: $json.summary?.escalated_to_human, run_id: $json.run_id }) }}",
         "options": {}
       },
-      "id": "507cba48-4c52-4757-868e-ffc42c53f81c",
+      "id": "6d2ae4f4-7f3a-4ef9-affa-8b6694239ef3",
       "name": "Respond to Dashboard",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1984,
-        192
+        2112,
+        224
       ]
     },
     {
       "parameters": {
-        "url": "={{ $env.SUPABASE_URL + '/rest/v1/patients?id=eq.' + $json.patient_id + '&select=profiles!patients_profile_id_fkey(email),doctors!patients_assigned_doctor_id_fkey(profiles!doctors_profile_id_fkey(email))' }}",
+        "url": "=https://ydgwpkgnbhftbcthokrt.supabase.co/rest/v1/patients?id=eq.{{ $json.patient_id }}&select=profiles!patients_profile_id_fkey(email,full_name),doctors!patients_assigned_doctor_id_fkey(profiles!doctors_profile_id_fkey(email,full_name))",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+              "value": "=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkZ3dwa2duYmhmdGJjdGhva3J0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTMxNDczNCwiZXhwIjoyMDk2ODkwNzM0fQ.1-TD3cSNp-h1Oh8DrOo0FZLalFmxjUQ9Od6nIwedss4"
             },
             {
               "name": "Authorization",
-              "value": "={{ \"Bearer \" + $env.SUPABASE_SERVICE_KEY }}"
+              "value": "=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkZ3dwa2duYmhmdGJjdGhva3J0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTMxNDczNCwiZXhwIjoyMDk2ODkwNzM0fQ.1-TD3cSNp-h1Oh8DrOo0FZLalFmxjUQ9Od6nIwedss4"
             }
           ]
         },
@@ -468,27 +468,27 @@
           "timeout": 10000
         }
       },
-      "id": "40d9c7f4-5661-4e8d-a201-d118d1a4ed23",
+      "id": "195bc726-ae3a-4b92-8b61-f1569b86ff68",
       "name": "Fetch Patient & Doctor Emails",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        496,
-        528
+        624,
+        560
       ],
-      "onError": "continueErrorOutput"
+      "retryOnFail": true
     },
     {
       "parameters": {
         "jsCode": "// Safely read governance data from the node that ran before email fetch.\n// We try multiple source nodes in case this is a fail-safe item.\nlet original = {};\nconst sourceNodes = ['Normalise & Govern', 'Fail-Safe: Agent Unreachable'];\nfor (const nodeName of sourceNodes) {\n  try {\n    const src = $(nodeName).item?.json;\n    if (src && src.patient_id) { original = src; break; }\n  } catch(e) {}\n}\n\n// Supabase response: success = array, error = error object\nlet row = {};\ntry {\n  const raw = $input.first().json;\n  if (Array.isArray(raw)) {\n    row = raw[0] || {};\n  } else if (raw && !raw.error && !raw.message) {\n    row = raw;\n  }\n  // If raw has error/message it's a Supabase error — keep row = {}\n} catch(e) {\n  row = {};\n}\n\nconst patient_email = row.profiles?.email || null;\nconst doctor_email  = row.doctors?.profiles?.email || null;\n\nreturn [{\n  json: {\n    ...original,\n    patient_email:               patient_email,\n    doctor_email:                doctor_email,\n    patient_notification_status: patient_email ? 'pending' : 'unavailable',\n    doctor_notification_status:  doctor_email  ? 'pending'  : 'unavailable',\n  }\n}];"
       },
-      "id": "693cd1fd-33ba-4ab6-91f9-4eb998620331",
+      "id": "e9c6be87-d874-4e43-b911-467f1e12819f",
       "name": "Normalise Email Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        736,
-        528
+        864,
+        560
       ]
     },
     {
@@ -526,37 +526,37 @@
         },
         "options": {}
       },
-      "id": "22b15bd1-6860-4ec4-9f07-8f8f311ac93d",
+      "id": "dc284f5b-1de8-44bb-a85b-46904cfeb016",
       "name": "Patient Email Exists?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        928,
-        528
+        1056,
+        560
       ]
     },
     {
       "parameters": {
         "fromEmail": "medicarepron8n@gmail.com",
-        "toEmail": "={{ $(\"Fetch Patient & Doctor Emails\").item.json.profiles.email }}",
-        "subject": "=Your ECG results are ready - {{ $json.patient_id }}",
+        "toEmail": "={{ $(\"Fetch Patient & Doctor Emails\").item.json.profiles?.email }}",
+        "subject": "=Your ECG results are ready - {{ $(\"Normalise & Govern\").item.json.patient_id }}",
         "emailFormat": "text",
-        "text": "={{ $(\"Normalise & Govern\").item.json.family_reassurance_message }}",
+        "text": "={{\n(() => {\n  const fetch = $(\"Fetch Patient & Doctor Emails\").item.json || {};\n  const gov = $(\"Normalise & Govern\").item.json || {};\n  const src = $(\"Validate & Route Input\").item.json || {};\n  const api = $(\"Call Clinical Agent API\").item.json || {};\n\n  function firstValue(...values) {\n    for (const value of values) {\n      if (value !== undefined && value !== null && value !== \"\") {\n        return value;\n      }\n    }\n    return undefined;\n  }\n\n  function toNumber(value, fallback = 0) {\n    const number = Number(value);\n    return Number.isFinite(number) ? number : fallback;\n  }\n\n  const profile = fetch.profiles || {};\n  const fullName = profile.full_name || \"there\";\n  const firstName = String(fullName).trim().split(/\\s+/)[0] || \"there\";\n\n  const classCandidates = [\n    gov.predicted_class_aami,\n    gov.prediction,\n    src.predicted_class_aami,\n    src.prediction,\n    src.result,\n    src.class,\n    api.features?.predicted_class_aami,\n    api.features?.prediction,\n    api.predicted_class_aami,\n    api.prediction\n  ]\n    .filter(value => value !== undefined && value !== null && value !== \"\")\n    .map(value => String(value).trim().toUpperCase());\n\n  const hasAbnormalClass = classCandidates.some(value =>\n    [\"S\", \"V\", \"F\", \"Q\"].includes(value)\n  );\n\n  const abnormalBeatCount = toNumber(firstValue(\n    gov.abnormal_beat_count,\n    gov.abnormal_beats,\n    gov.influential_abnormal_beats,\n    gov.abnormal_or_influential_beats,\n    src.abnormal_beat_count,\n    src.abnormal_beats,\n    src.influential_abnormal_beats,\n    src.abnormal_influential_beats,\n    src.abnormal_or_influential_beats,\n    api.abnormal_beat_count,\n    api.abnormal_beats,\n    api.features?.abnormal_beat_count,\n    api.features?.abnormal_beats,\n    0\n  ));\n\n  const isAbnormalCase =\n    hasAbnormalClass ||\n    abnormalBeatCount > 0;\n\n  if (isAbnormalCase) {\n    return [\n      `Hello ${firstName},`,\n      \"\",\n      \"Your ECG test has been processed.\",\n      \"\",\n      \"The automated review found something that may need medical review. This does not mean that a final diagnosis has been made.\",\n      \"\",\n      \"A doctor will review the result and contact you shortly if follow-up is needed.\",\n      \"\",\n      \"Please do not make medical decisions based only on this automated message.\",\n      \"\",\n      \"If you feel unwell, have chest pain, shortness of breath, fainting, dizziness, or worsening symptoms, please seek urgent medical help immediately.\",\n      \"\",\n      \"Thank you.\"\n    ].join(\"\\n\");\n  }\n\n  return [\n    `Hello ${firstName},`,\n    \"\",\n    \"Your ECG test has been processed.\",\n    \"\",\n    \"The automated review did not identify anything that needs urgent medical attention.\",\n    \"\",\n    \"A healthcare professional may still review the result as part of normal care.\",\n    \"\",\n    \"Please continue to follow any advice already given by your healthcare team.\",\n    \"\",\n    \"If you feel unwell, have chest pain, shortness of breath, fainting, dizziness, or severe symptoms, please seek medical help.\",\n    \"\",\n    \"Thank you.\"\n  ].join(\"\\n\");\n})()\n}}",
         "options": {}
       },
-      "id": "1e451bd4-3ef8-4541-94e1-db6d6da6c8dc",
+      "id": "8dbf68d6-f383-4da1-8f02-3c9a00f78e79",
       "name": "Patient Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1104,
-        528
+        1232,
+        560
       ],
       "webhookId": "3fbce070-3242-4219-acfd-3184daba7f7c",
       "credentials": {
         "smtp": {
           "id": "P6riRPF7a0q4TPLT",
-          "name": "SMTP account 2"
+          "name": "SMTP account"
         }
       },
       "onError": "continueErrorOutput"
@@ -576,37 +576,37 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "ec875b33-e109-47fb-ba3e-90d825c12671",
+      "id": "9c65759a-b0e2-4326-8839-cd99f015ca7a",
       "name": "Skip Patient Email",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        992,
-        656
+        1120,
+        688
       ]
     },
     {
       "parameters": {},
-      "id": "fafcc18c-614e-46bc-b00d-554434873af5",
+      "id": "2457236a-05dd-49ab-b834-f2cd8ed0ebaf",
       "name": "Rejoin After Patient Email",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1696,
-        576
+        1824,
+        608
       ]
     },
     {
       "parameters": {
         "jsCode": "// Record whether patient email actually sent or failed\nconst d = $input.first().json;\nconst sent = !d.error && !d.message;  // if error object arrived, it failed\nreturn [{\n  json: {\n    ...d,\n    patient_notification_status: sent ? 'sent' : 'failed',\n  }\n}];"
       },
-      "id": "7effe3bf-7812-4ab4-838a-76d0842be5e0",
+      "id": "6bd5ebd7-32cb-4ae6-b16e-62d8d4198680",
       "name": "Record Patient Email Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1376,
-        464
+        1504,
+        496
       ]
     },
     {
@@ -624,26 +624,26 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "088ac613-ed7c-4994-8c89-f7ceec638606",
+      "id": "85c42f1a-146d-426e-8d37-18a7099f7def",
       "name": "Record Patient Email Unavailable",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1376,
-        608
+        1504,
+        640
       ]
     },
     {
       "parameters": {
         "jsCode": "// Record whether the detailed doctor email was sent to the assigned doctor or fallback route.\nconst d = $input.first().json;\nconst failed = !!(d.error || d.message);\nconst hasAssignedDoctor = !!d.doctor_email;\nconst hasFallbackDoctor = !!$env.FALLBACK_DOCTOR_EMAIL;\n\nlet status = 'unavailable';\nif (failed) {\n  status = 'failed';\n} else if (hasAssignedDoctor) {\n  status = 'sent_to_assigned_doctor';\n} else if (hasFallbackDoctor) {\n  status = 'fallback_sent';\n}\n\nreturn [{\n  json: {\n    ...d,\n    doctor_notification_status: status,\n  }\n}];"
       },
-      "id": "3a36c774-9ead-46e8-b2f7-680b17379036",
+      "id": "b8d30934-4dcd-4ed1-9f3c-cbe828b3cd02",
       "name": "Record Doctor Email Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1744,
-        288
+        1872,
+        320
       ],
       "onError": "continueErrorOutput"
     }
@@ -739,13 +739,7 @@
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Normalise Email Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Normalise Email Fields": {
@@ -1003,11 +997,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "df7cef2a-1974-4f91-82aa-bdfed2692bf5",
+  "versionId": "97be13ab-66d8-4de4-806d-213e5db00e95",
   "meta": {
     "instanceId": "10d1d4ffa267cbc9e81284f72bfe31f42e7ce9e896bbf94adeb02dbb153676e8"
   },
   "nodeGroups": [],
-  "id": "srR5347tlXzQQrk3",
+  "id": "YHxhPtmN14sWuM3v",
   "tags": []
 }
